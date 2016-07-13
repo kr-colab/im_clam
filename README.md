@@ -8,3 +8,8 @@ list of dependencies
 
 glib
 pkg-config
+csparse
+petsc
+slepc
+nlopt
+
