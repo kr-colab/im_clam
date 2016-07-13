@@ -1,0 +1,30 @@
+#include <slepcmfn.h>
+#include "cs.h"
+
+//for use in programs like im_clam
+typedef struct clam_lik_params{
+	int snpNumber, maxSampleSize,nstates,n1,n2,nParams;
+	gsl_vector *sampleSizeVector,*rates, *stateVec, *resVec ;
+	gsl_vector *paramVector,*paramCIUpper,*paramCILower, *mlParams; 
+	//For straight MLE the paramVector takes the form [N2,NA,m1,m2,t]
+	gsl_matrix *log_afs, *transMat,*expAFS, *expAFS2, *invMatGSL, *invMatGSLA, *obsData;
+	afsStateSpace *stateSpace ,*reducedStateSpace;
+	struct site *data;
+	double *cs_work,*new,*topA,*resultTmp,**invMat,*b,*res, *st, *top;
+	int *dim1, *dim2, *moveA, *move, *dim1A, *dim2A; //these pointers ease the construction of sparse matrices
+	int nnz, nnzA;
+	double maxLik;
+	int *map, *reverseMap; //these provide mapping of between state spaces of two phases
+	int optimized;
+	int rank;
+	int Na,fEvals;
+	double *expoArray;
+	cs_di *spMat, *mt, *eye, *tmpMat, *tmpMat2;
+	Vec  x_0, *x, u,bP, u2, bP2, v, y, v_seq, *x2, ancStateVec, ancResVec;
+	Mat            ident,C, C2, C_transpose, D, D_copy, F, denseMat1, denseMat2, denseMat3;
+	VecScatter	ctx;
+	MFN                mfn;
+	PetscInt        iStart,iEnd;
+	
+	
+}clam_lik_params;

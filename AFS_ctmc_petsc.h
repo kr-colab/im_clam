@@ -1,0 +1,26 @@
+#ifndef CTMC_PETSC
+#define CTMC_PETSC
+
+#include <petscksp.h>
+extern double lowerBounds[5];
+extern double upperBounds[5];
+
+#endif
+
+extern PetscBool vbse;
+
+
+
+void fillPetscTransMats(afsStateSpace *S, double *topol, int *moveType, int *nzCount,
+	int *dim1, int *dim2, double theta1, double theta2, double mig1, double mig2, Mat *DTMC, Mat *CTMC, gsl_vector *rates);
+	
+struct cs_di_sparse * fillPetscCsparseTransMats(afsStateSpace *S, double *topol, int *moveType, int *nzCount,
+	int *dim1, int *dim2, double theta1, double theta2, double mig1, double mig2, Mat *CTMC, gsl_vector *rates);
+	
+void calcLogAFS_IM(void * p);
+double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p);
+double calcLikNLOpt_gradients(unsigned n, const double *point, double *gradients, void *p);
+
+void maximizeLikNLOpt(double *lik, void *p, double *mle);
+void maximizeLikNLOpt_twoStage(double *lik, void *p, double *mle);
+void maximizeLikNLOpt_MLSL(double *lik, void *p, double *mle);
