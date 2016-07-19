@@ -85,4 +85,4 @@ This saves the state space to the file `ss_3_4`. Next we calculate the topology 
 ```
 ./cmc_topol ss_3_4 > ss_3_4_mats
 ```
-Those two files, `ss_3_4` and `ss_3_4_mats` will be used as input to `im_clam`. 
+Those two files, `ss_3_4` and `ss_3_4_mats` will be used as input to `im_clam`. I have provided a number of example state space files and their associated topology matrices in the directory `stateSpaceFiles`. Each of these is named after the sample sizes: for instance `stateSpaceFiles/testSS_33` contains the stateSpace for samples of size n1=n2=3, and its associated topology matrix is named `stateSpaceFiles/testSS_33_mats`. These can get you started but you can always calculate your own as shown above.
