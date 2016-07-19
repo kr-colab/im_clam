@@ -29,8 +29,8 @@ cmc_stateSpace:	cmc_stateSpace.c AFS.c
 cmc_topol:	cmc_topol.c AFS.c AFS_ctmc.c AFS_pthreads.c
 	$(CC) cmc_topol.c $(COMMON) -O3 -lm -o cmc_topol $(GLIB) $(MY_CFLAGS) 
 
-im_clam:	im_clam.c AFS.c adkCSparse.c AFS_ctmc.c AFS_ctmc_petsc.c $(FOBJECTS) chkopts
-	${CLINKER} im_clam.c AFS_ctmc.c AFS_ctmc_petsc.c -o im_clam ${PETSC_KSP_LIB} ${SLEPC_MFN_LIB} $(MY_CFLAGS) $(COMMON) $(FOBJECTS) -lgfortran -lnlopt -I ${PETSC_DIR}/include/ -I ${SLEPC_DIR}/include/ -I ${SLEPC_DIR}/${PETSC_ARCH}/include/ -O3 -lgsl
+im_clam:	im_clam.c AFS.c adkCSparse.c AFS_ctmc.c AFS_ctmc_petsc.c  chkopts
+	${CLINKER} im_clam.c AFS_ctmc.c AFS_ctmc_petsc.c -o im_clam ${PETSC_KSP_LIB} ${SLEPC_MFN_LIB} $(COMMON)  -lnlopt -I ${PETSC_DIR}/include/ -I ${SLEPC_DIR}/include/ -I ${SLEPC_DIR}/${PETSC_ARCH}/include/ -O3 $(MY_CFLAGS)   
 
 #clean:
 #	rm -f island cmc_stateSpace cmc_eAFS cmc_im_mle $(FOBJECTS)
