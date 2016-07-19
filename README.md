@@ -21,6 +21,28 @@ Please note that newer versions (>=3.6) of the petsc and slepc libraries break `
 
 ## Install on Linux
 I focus on linux here as most compute clusters suitable for running `im_clam` will, I assume, be using some flavor of linux. Here I go through the steps necessary on a clean Ubuntu 16.04 install. 
+
+First install the basics
 ```
-sudo apt-get install libglib2.0-dev cmake 
+apt-get install libglib2.0-dev cmake pkg-config gsl-bin libgsl-dev libnlopt-dev libsuitesparse-dev
 ```
+Once those packages are installed its time to move on to `petsc`. We will configure `petsc` to install `MPICH` as our MPI installation. For the sake of example I will download everything to my home dir
+
+```
+cd ~
+wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.5.4.tar.gz .
+tar zxvf petsc-3.5.4.tar.gz .
+cd petsc-3.5.4/
+./configure --download-fblaslapack --download-mpich
+```
+this will take a few minutes to run. next you are ready to make `petsc`
+```
+make PETSC_DIR=<yourhomedir>/petsc-3.5.4 PETSC_ARCH=arch-linux2-c-debug all
+```
+with `<yourhomedir>` replaced with the proper value of your home directory or where ever else you have downloaded petsc. once the compilation is complete, you can test it using `make test`. `petsc` relies on two environmental variables, `PETSC_DIR` and `PETSC_ARCH`. Its a good idea to add a couple lines to your .bash_profile such as
+```
+export PETSC_DIR=<yourhomedir>/petsc-3.5.4
+export PETSC_ARCH=arch-linux2-c-debug
+```
+again inserting the proper value of `<yourhomedir>`
+
