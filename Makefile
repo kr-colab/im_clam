@@ -12,7 +12,7 @@ include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
 include ${SLEPC_DIR}/conf/slepc_common
 
-all:	 cmc_stateSpace cmc_topol im_clam
+all:	cmc_stateSpace cmc_topol im_clam
 
 cmc_stateSpace:	cmc_stateSpace.c AFS.c 
 	$(CC) cmc_stateSpace.c $(COMMON) -O3 -lm -o cmc_stateSpace $(GLIB) $(MY_CFLAGS)
@@ -23,7 +23,7 @@ cmc_topol:	cmc_topol.c AFS.c AFS_ctmc.c AFS_pthreads.c
 im_clam:	im_clam.c AFS.c adkCSparse.c AFS_ctmc.c AFS_ctmc_petsc.c  chkopts
 	${CLINKER} im_clam.c AFS_ctmc.c AFS_ctmc_petsc.c -o im_clam ${PETSC_KSP_LIB} ${SLEPC_MFN_LIB} $(COMMON) $(GLIB) -lnlopt -I ${PETSC_DIR}/include/ -I ${SLEPC_DIR}/include/ -I ${SLEPC_DIR}/${PETSC_ARCH}/include/ -O3 $(MY_CFLAGS)   
 
-clean: im_clam cmc_stateSpace cmc_topol
+clean:	im_clam cmc_stateSpace cmc_topol
 	rm -f im_clam cmc_stateSpace cmc_topol
 
 #test:  test.c adkGSL.c
