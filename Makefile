@@ -24,7 +24,7 @@ fortran: mataid.f my_expokit.f my_matexp.f clock.f
 	gfortran -c $(FORTRAN) -O3
 
 cmc_stateSpace:	cmc_stateSpace.c AFS.c 
-	$(CC) $(MY_CFLAGS) cmc_stateSpace.c $(COMMON) -O3 -lm -o cmc_stateSpace $(GLIB)
+	$(CC) cmc_stateSpace.c $(COMMON) -O3 -lm -o cmc_stateSpace $(GLIB) $(MY_CFLAGS)
 
 cmc_topol:	cmc_topol.c AFS.c AFS_ctmc.c AFS_pthreads.c
 	$(CC) $(MY_CFLAGS) cmc_topol.c $(COMMON) -O3 -lm -o cmc_topol $(GLIB)
