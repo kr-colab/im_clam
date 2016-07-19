@@ -205,23 +205,23 @@ gsl_matrix *lapack_2_gsl_matrix(double *A, int nrows, int ncols){
   return new;
 }
 
-gsl_matrix *gsl_matrix_power_logs(gsl_matrix *aMatrix, int power){
-  gsl_matrix *powerMat, *logMat;
-  int i, j;
-  double x;
-
-  
-  powerMat = gsl_matrix_power(aMatrix, power);
-  logMat = gsl_matrix_alloc(aMatrix->size1, aMatrix->size2);
-  for(i = 0; i < aMatrix->size1; i++){
-    for(j = 0; j < aMatrix->size2; j++){
-      x = gsl_matrix_get(powerMat, i, j);
-      gsl_matrix_set(logMat, i, j, log(x));
-    }
-  }
-  gsl_matrix_free(powerMat);
-  return(logMat);
-}
+// gsl_matrix *gsl_matrix_power_logs(gsl_matrix *aMatrix, int power){
+//   gsl_matrix *powerMat, *logMat;
+//   int i, j;
+//   double x;
+// 
+//   
+//   powerMat = gsl_matrix_power(aMatrix, power);
+//   logMat = gsl_matrix_alloc(aMatrix->size1, aMatrix->size2);
+//   for(i = 0; i < aMatrix->size1; i++){
+//     for(j = 0; j < aMatrix->size2; j++){
+//       x = gsl_matrix_get(powerMat, i, j);
+//       gsl_matrix_set(logMat, i, j, log(x));
+//     }
+//   }
+//   gsl_matrix_free(powerMat);
+//   return(logMat);
+// }
   
 // gsl_matrix *gsl_matrix_power(gsl_matrix *aMatrix, int power){
 //   gsl_matrix *revect, *levect;
