@@ -12,7 +12,7 @@ include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
 include ${SLEPC_DIR}/conf/slepc_common
 
-#all:	cmc_stateSpace cmc_topol im_clam
+all:	cmc_stateSpace cmc_topol im_clam
 
 cmc_stateSpace:	cmc_stateSpace.c AFS.c 
 	$(CC) cmc_stateSpace.c $(COMMON) -O3 -lm -o cmc_stateSpace $(GLIB) $(MY_CFLAGS)
