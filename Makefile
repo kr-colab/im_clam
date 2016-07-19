@@ -23,7 +23,7 @@ cmc_topol:	cmc_topol.c AFS.c AFS_ctmc.c AFS_pthreads.c
 im_clam:	im_clam.c AFS.c adkCSparse.c AFS_ctmc.c AFS_ctmc_petsc.c  chkopts
 	${CLINKER} im_clam.c AFS_ctmc.c AFS_ctmc_petsc.c -o im_clam ${PETSC_KSP_LIB} ${SLEPC_MFN_LIB} $(COMMON) $(GLIB) -lnlopt -I ${PETSC_DIR}/include/ -I ${SLEPC_DIR}/include/ -I ${SLEPC_DIR}/${PETSC_ARCH}/include/ -O3 $(MY_CFLAGS)   
 
-clean:
+clean: im_clam cmc_stateSpace cmc_topol
 	rm -f im_clam cmc_stateSpace cmc_topol
 
 #test:  test.c adkGSL.c
