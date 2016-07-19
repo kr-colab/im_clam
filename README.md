@@ -67,6 +67,13 @@ That should be all the dependencies. Now on to `im_clam` itself. Clone the `im_c
 ```
 git clone https://github.com/kern-lab/im_clam
 cd im_clam
-make
+make all
 ```
+currently this runs with a bunch of compiler warnings. Ignore that for now, as I will be cleaning those in the coming weeks, months, years-- everything should run fine.
+
+When compilation is complete you will be left with three programs
+- `cmc_stateSpace` - this calculates the state space of an IM model with the specified sample sizes
+- `cmc_topol` - this calculates statistics about the eventual transition matrix. 
+- `im_clam` - the main program that will compute the expected AFS as well as do inference
+- 
 
