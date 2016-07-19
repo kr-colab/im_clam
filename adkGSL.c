@@ -223,112 +223,112 @@ gsl_matrix *gsl_matrix_power_logs(gsl_matrix *aMatrix, int power){
   return(logMat);
 }
   
-gsl_matrix *gsl_matrix_power(gsl_matrix *aMatrix, int power){
-  gsl_matrix *revect, *levect;
-  double *dataMat, *wr, *wi, *vl, *vr, *aMat, *bMat, *cMat, *dMat, *work;
-  int lwork, i, j, n ;
-  assert(aMatrix->size1 == aMatrix->size2);
-  n = aMatrix->size1;
-
-  if (power == 1){
-    gsl_matrix * solMat = gsl_matrix_alloc(n, n);
-    for(i=0; i < n; i++){
-      for(j = 0; j< n; j++){
-	gsl_matrix_set(solMat, i, j, gsl_matrix_get(aMatrix,i,j));
-      }
-    }
-    return(solMat);
-  }
-
-  
-  //allocate space for eigenvector matrices, and other result holders
-  levect = gsl_matrix_alloc(n, n);
-  revect = gsl_matrix_alloc(n, n);
-  wr = malloc(n * sizeof(double));
-  wi =  malloc(n * sizeof(double));
-  vl = malloc(n * n * sizeof(double));
-  vr = malloc(n * n * sizeof(double));
-  lwork = 20 * n;
-  work = malloc(lwork * sizeof(double));
- 
-  //move data to LAPACK (col major) format
-  dataMat =  gsl_matrix_2_lapack(aMatrix);
- 
-  //run LAPACK routine dgeev
-//  #ifdef OSX
-  dgeev('V','V',n, dataMat, n, wr, wi, vl, n, vr, n, work, lwork);
-  //#else
-  //dgeev_('V','V',n, dataMat, n, wr, wi, vl, n, vr, n, work, lwork, info);
-  //#endif
-  //collect eigenvalues into matrices
-  for(i=0; i < n; i++){
-    for(j = 0; j< n; j++){
-      gsl_matrix_set(revect, i, j, vr[j*2+i]);
-      gsl_matrix_set(levect, j, i, vl[j*2+i]);
-    }
-  }
-  
-  /* rescale such that revect and levect are inverses */
-  /* see Press et al. (Numerical Recipes) for a very clear explanation
-     of the relationship between the left and right eigenvectors  */
-   for(i = 0; i < n; i++){
-    double dotProd = 0.0;
-    /* compute dot product of row i in levect and col i in revect */
-    for(j = 0; j< n; j++){
-      dotProd += gsl_matrix_get(levect, i, j) * gsl_matrix_get(revect,j,i); 
-      }
-    
-      /* now rescale levect */
-    for(j = 0; j< n; j++){
-      double old = gsl_matrix_get(levect, i, j);
-      double scaled = old / dotProd;
-      gsl_matrix_set(levect, i, j, scaled);
-      } 
-  }
-
-   //prepare for matrix multiplication
-   gsl_matrix * solMat = gsl_matrix_alloc(n, n);
-   gsl_matrix * diag = gsl_matrix_alloc(n, n);
-   gsl_matrix_set_all(diag, 0);
-   for(j = 0; j< n; j++){
-     gsl_matrix_set(diag, j,j, pow(wr[j],power));
-   }
-   
-   aMat = gsl_matrix_2_lapack(diag);
-   bMat = gsl_matrix_2_lapack(revect);
-   cMat = malloc(n * n * sizeof(double));
-
-   //compute a^t = s^-1 * diag^t * s
-   //cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, n, n, n, 1.0, aMat, n, bMat, n, 0.0, cMat, n);
-   free(bMat);
-
-   bMat = gsl_matrix_2_lapack(levect);
-   dMat =  malloc(n * n * sizeof(double));
-   //cblas_dgemm(CblasColMajor, CblasTrans, CblasNoTrans, n, n, n, 1, cMat, n, bMat, n, 0.0, dMat, n); 
-
-   //put results into gsl_matrix
-   for(i = 0; i < n; i++){
-     for(j = 0; j < n; j++){
-       gsl_matrix_set(solMat, i, j, dMat[j*n+i]);
-     }
-   }
-  
-   //cleanup
-   gsl_matrix_free(levect);
-   gsl_matrix_free(revect);
-   gsl_matrix_free(diag);
-   free(work);
-   free(vl);
-   free(vr);
-   free(wi);
-   free(wr);
-   free(aMat);
-   free(bMat);
-   free(cMat);
-   free(dMat);
-   free(dataMat);
-   return(solMat);
-}
+// gsl_matrix *gsl_matrix_power(gsl_matrix *aMatrix, int power){
+//   gsl_matrix *revect, *levect;
+//   double *dataMat, *wr, *wi, *vl, *vr, *aMat, *bMat, *cMat, *dMat, *work;
+//   int lwork, i, j, n ;
+//   assert(aMatrix->size1 == aMatrix->size2);
+//   n = aMatrix->size1;
+// 
+//   if (power == 1){
+//     gsl_matrix * solMat = gsl_matrix_alloc(n, n);
+//     for(i=0; i < n; i++){
+//       for(j = 0; j< n; j++){
+// 	gsl_matrix_set(solMat, i, j, gsl_matrix_get(aMatrix,i,j));
+//       }
+//     }
+//     return(solMat);
+//   }
+// 
+//   
+//   //allocate space for eigenvector matrices, and other result holders
+//   levect = gsl_matrix_alloc(n, n);
+//   revect = gsl_matrix_alloc(n, n);
+//   wr = malloc(n * sizeof(double));
+//   wi =  malloc(n * sizeof(double));
+//   vl = malloc(n * n * sizeof(double));
+//   vr = malloc(n * n * sizeof(double));
+//   lwork = 20 * n;
+//   work = malloc(lwork * sizeof(double));
+//  
+//   //move data to LAPACK (col major) format
+//   dataMat =  gsl_matrix_2_lapack(aMatrix);
+//  
+//   //run LAPACK routine dgeev
+// //  #ifdef OSX
+//   dgeev('V','V',n, dataMat, n, wr, wi, vl, n, vr, n, work, lwork);
+//   //#else
+//   //dgeev_('V','V',n, dataMat, n, wr, wi, vl, n, vr, n, work, lwork, info);
+//   //#endif
+//   //collect eigenvalues into matrices
+//   for(i=0; i < n; i++){
+//     for(j = 0; j< n; j++){
+//       gsl_matrix_set(revect, i, j, vr[j*2+i]);
+//       gsl_matrix_set(levect, j, i, vl[j*2+i]);
+//     }
+//   }
+//   
+//   /* rescale such that revect and levect are inverses */
+//   /* see Press et al. (Numerical Recipes) for a very clear explanation
+//      of the relationship between the left and right eigenvectors  */
+//    for(i = 0; i < n; i++){
+//     double dotProd = 0.0;
+//     /* compute dot product of row i in levect and col i in revect */
+//     for(j = 0; j< n; j++){
+//       dotProd += gsl_matrix_get(levect, i, j) * gsl_matrix_get(revect,j,i); 
+//       }
+//     
+//       /* now rescale levect */
+//     for(j = 0; j< n; j++){
+//       double old = gsl_matrix_get(levect, i, j);
+//       double scaled = old / dotProd;
+//       gsl_matrix_set(levect, i, j, scaled);
+//       } 
+//   }
+// 
+//    //prepare for matrix multiplication
+//    gsl_matrix * solMat = gsl_matrix_alloc(n, n);
+//    gsl_matrix * diag = gsl_matrix_alloc(n, n);
+//    gsl_matrix_set_all(diag, 0);
+//    for(j = 0; j< n; j++){
+//      gsl_matrix_set(diag, j,j, pow(wr[j],power));
+//    }
+//    
+//    aMat = gsl_matrix_2_lapack(diag);
+//    bMat = gsl_matrix_2_lapack(revect);
+//    cMat = malloc(n * n * sizeof(double));
+// 
+//    //compute a^t = s^-1 * diag^t * s
+//    //cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, n, n, n, 1.0, aMat, n, bMat, n, 0.0, cMat, n);
+//    free(bMat);
+// 
+//    bMat = gsl_matrix_2_lapack(levect);
+//    dMat =  malloc(n * n * sizeof(double));
+//    //cblas_dgemm(CblasColMajor, CblasTrans, CblasNoTrans, n, n, n, 1, cMat, n, bMat, n, 0.0, dMat, n); 
+// 
+//    //put results into gsl_matrix
+//    for(i = 0; i < n; i++){
+//      for(j = 0; j < n; j++){
+//        gsl_matrix_set(solMat, i, j, dMat[j*n+i]);
+//      }
+//    }
+//   
+//    //cleanup
+//    gsl_matrix_free(levect);
+//    gsl_matrix_free(revect);
+//    gsl_matrix_free(diag);
+//    free(work);
+//    free(vl);
+//    free(vr);
+//    free(wi);
+//    free(wr);
+//    free(aMat);
+//    free(bMat);
+//    free(cMat);
+//    free(dMat);
+//    free(dataMat);
+//    return(solMat);
+// }
 
 //returns the trace of a matrix-- sum of diag
 double gsl_matrix_trace(gsl_matrix *x){
