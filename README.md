@@ -75,5 +75,14 @@ When compilation is complete you will be left with three programs
 - `cmc_stateSpace` - this calculates the state space of an IM model with the specified sample sizes
 - `cmc_topol` - this calculates statistics about the eventual transition matrix. 
 - `im_clam` - the main program that will compute the expected AFS as well as do inference
-- 
 
+## Basic Usage
+The first step to using `im_clam` is  calculating the state space for a given sample configuration and its associated topology matrix. This is done using the programs `cmc_stateSpace` and `cmc_topol`. For instance imagine you were interested in a sample of size n=3 from one population and n=4 from a second. To calculate the state space we would use the following call
+```
+./cmc_stateSpace 3 4 > ss_3_4
+```
+This saves the state space to the file `ss_3_4`. Next we calculate the topology matrix
+```
+./cmc_topol ss_3_4 > ss_3_4_mats
+```
+Those two files, `ss_3_4` and `ss_3_4_mats` will be used as input to `im_clam`. 
