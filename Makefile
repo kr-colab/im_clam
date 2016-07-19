@@ -1,7 +1,7 @@
 CC = gcc
 CCPLUS = g++
 FC = gfortran
-MY_CFLAGS =  -Wall -lm -lgsl -lcxsparse -llapack -lblas -L /usr/local/lib/atlas/ -I /usr/local/lib/atlas/include/ -L /usr/local/lib/ -I /usr/local/include/ -L/opt/local/lib -lgsl -lgslcblas -I/opt/local/include 
+MY_CFLAGS =  -Wall -lm -lgsl -lcxsparse -llapack -lblas -lgslcblas -I/usr/include/suitesparse
 COMMON = AFS.c sites.c multimin.c adkGSL.c adkCSparse.c
 TWOLOCCOMMON = twoLocusAFS.c sites.c multimin.c adkGSL.c adkCSparse.c
 CTMCCOMMON = AFS_ctmc.c sparseExp.c
