@@ -477,6 +477,7 @@ void afsStateSpaceRemovePopulation(afsStateSpace *S, int popn){
 afsStateSpace *afsStateSpaceImportFromFile(const char *fileName){
 	int m1,m2,ns;
 	int i,j,l,c;
+	char tmp;
 	FILE *infile;
 	afsStateSpace *newStateSpace;
 //	afsObject *newObj;
@@ -494,12 +495,12 @@ afsStateSpace *afsStateSpaceImportFromFile(const char *fileName){
 	c=fscanf(infile,"n1: %d n2: %d nstates: %d", &m1, &m2, &ns);
 	newStateSpace = afsStateSpaceNew();
 	newStateSpace->nstates = ns;
-	c=fgets(line,linebuf,infile);
+	tmp=fgets(line,linebuf,infile);
 
 	for(l=0;l<ns;l++){
 		newStateSpace->states[l] = afsObjectNew(m1,m2);
 		for(i=0;i<m1+1;i++){
-			c=fgets(line,linebuf,infile);
+			tmp=fgets(line,linebuf,infile);
 	//		printf("%s\n",line);
 	//		printf("----\n");
 			token = strtok(line,search);
@@ -519,7 +520,7 @@ afsStateSpace *afsStateSpaceImportFromFile(const char *fileName){
 			}
 
 		}
-		c=fgets(line,linebuf,infile);
+		tmp=fgets(line,linebuf,infile);
 		newStateSpace->states[l]->aCounts[0] = matrixSum(newStateSpace->states[l]->popMats[0]);
 		newStateSpace->states[l]->aCounts[1] = matrixSum(newStateSpace->states[l]->popMats[1]);
 		newStateSpace->states[l]->nalleles = afsObjectCount(newStateSpace->states[l]);
@@ -536,12 +537,9 @@ afsStateSpace *afsStateSpaceImportFromFile(const char *fileName){
 //mcMatsImportFromFile -- reads in the Topology and MoveType matrices output by cmc_printMCMats program
 // this function only fills preallocated arrays and sets nnz
 void mcMatsImportFromFile(const char *fileName,int *nnz,double *topol, int *moveA, int *dim1, int *dim2){
-	int i;
+	int i,c;
 	FILE *infile;
 
-//	afsObject *newObj;
-	int linebuf = 10000;
-	char line[linebuf+1],*token, search[]=" ";
 
 	//open file
 	infile = fopen(fileName, "r");
@@ -550,9 +548,9 @@ void mcMatsImportFromFile(const char *fileName,int *nnz,double *topol, int *move
 		exit(1);
 	}
 	//initialization
-	fscanf(infile,"nnz: %d", nnz);
+	c=fscanf(infile,"nnz: %d", nnz);
 	for(i=0;i<*nnz;i++){
-		fscanf(infile,"%lf\t%d\t%d\t%d\n",&topol[i],&moveA[i],&dim1[i],&dim2[i]);
+		c=fscanf(infile,"%lf\t%d\t%d\t%d\n",&topol[i],&moveA[i],&dim1[i],&dim2[i]);
 	}
 	fclose(infile);
 
@@ -1500,12 +1498,12 @@ int coalMarkovChainTopologyMatrix_sparse(afsStateSpace *S,double *topol, int *mo
 //readTopolFile-- this function allocs sparse matrix representation of topology and movetype matrices
 // and then fills them from reading from a file.
 void readTopolFile(const char *fileName, double *topA, int *moveA, int *dim1, int *dim2){
-	int i, nnz;
+	int i, nnz,c;
 	double tmp1;
 	int tmp2,tmp3,tmp4;
 	FILE *infile;
 	int linebuf = 10000;
-	char line[linebuf+1];
+	//char line[linebuf+1];
 
 	//open file
 	infile = fopen(fileName, "r");
@@ -1514,7 +1512,7 @@ void readTopolFile(const char *fileName, double *topA, int *moveA, int *dim1, in
 		exit(1);
 	}
 	//initialization
-	fscanf(infile,"nnz: %d", &nnz);
+	c=fscanf(infile,"nnz: %d", &nnz);
 	topA = malloc(sizeof(double)*nnz);
 	moveA = malloc(sizeof(int)*nnz);
 	dim1 = malloc(sizeof(int)*nnz);
@@ -1523,7 +1521,7 @@ void readTopolFile(const char *fileName, double *topA, int *moveA, int *dim1, in
 	
 	
 	for(i=0;i<nnz;i++){
-		fscanf(infile,"%lf\t%d\t%d\t%d", &tmp1, &tmp2, &tmp3,&tmp4);
+		c=fscanf(infile,"%lf\t%d\t%d\t%d", &tmp1, &tmp2, &tmp3,&tmp4);
 		topA[i] = tmp1;
 		moveA[i]=tmp2;
 		dim1[i]=tmp3;
