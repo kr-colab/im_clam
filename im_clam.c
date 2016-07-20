@@ -296,6 +296,7 @@ int main(int argc, char **argv){
 			gsl_matrix_prettyPrint(currentParams->expAFS);
 			printf("parameter values used:\n");
 			for(i=0;i<dim;i++)printf("%f\t",gsl_vector_get(currentParams->paramVector,i));
+			printf("\n\n");
 		}
 		break;
 		case 3:
