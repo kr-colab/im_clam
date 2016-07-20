@@ -477,7 +477,7 @@ void afsStateSpaceRemovePopulation(afsStateSpace *S, int popn){
 afsStateSpace *afsStateSpaceImportFromFile(const char *fileName){
 	int m1,m2,ns;
 	int i,j,l,c;
-	char tmp;
+	char *tmp;
 	FILE *infile;
 	afsStateSpace *newStateSpace;
 //	afsObject *newObj;
@@ -1502,8 +1502,6 @@ void readTopolFile(const char *fileName, double *topA, int *moveA, int *dim1, in
 	double tmp1;
 	int tmp2,tmp3,tmp4;
 	FILE *infile;
-	int linebuf = 10000;
-	//char line[linebuf+1];
 
 	//open file
 	infile = fopen(fileName, "r");

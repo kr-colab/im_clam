@@ -49,7 +49,7 @@ static char help[] = "im_clam\n\
 
 
 int main(int argc, char **argv){
-	int i,j, N, Ntmp,runMode;
+	int i,j, N,runMode;
 	clock_t time1, time2;
 	int nnz;
 	int seed;
@@ -125,7 +125,7 @@ int main(int argc, char **argv){
 	//import state space
 	stateSpace = afsStateSpaceImportFromFile(filename);
 	N = stateSpace->nstates;
-	Ntmp = N;
+
 
 	//quick peak at the mats file to set nnz
 	//open file

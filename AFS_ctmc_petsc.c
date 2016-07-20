@@ -200,7 +200,7 @@ struct cs_di_sparse * fillPetscCsparseTransMats(afsStateSpace *S, double *topol,
 //calcLogAFS_IM -- returns the expects log AFS from an IM model
 void calcLogAFS_IM(void * p){
 	struct clam_lik_params * params = (struct clam_lik_params *) p;
- 	int i,ii,j, N = params->stateSpace->nstates;
+ 	int i,j, N = params->stateSpace->nstates;
   	cs *spMat, *mt, *ident, *eye, *tmpMat ;
   	double timeV, sum, thetaA, theta2, mig1, mig2;
   	int Na;
@@ -283,7 +283,6 @@ void calcLogAFS_IM(void * p){
 
 //	MatView(params->denseMat1,PETSC_VIEWER_STDOUT_WORLD);
 
-	ii=0;
 	//broadcast the invMat[0,] as vector to each processor
 	if(params->rank==0){
 		MatGetRow(params->denseMat1,0,&N,&idx,&tmpArray);
@@ -496,7 +495,7 @@ void calcLogAFS_IM(void * p){
 }
 
 double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p){
-	int i,j,clen;
+	int i,j;
 	struct clam_lik_params * params = (struct clam_lik_params *) p;
 	double localNNZ = params->nnz;
 	double output = 666.0; 
@@ -522,7 +521,7 @@ double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p)
 	output = -1.0* lik;
 	MPI_Bcast(&output,1,MPI_DOUBLE,0,PETSC_COMM_WORLD);
 	if(params->rank == 0 && vbse){
-		for(i = 0;i<5;i++) printf("%lf\t",i,x[i]);
+		for(i = 0;i<5;i++) printf("x[%d]: %lf\t",i,x[i]);
 		printf("lik: %lf\n",lik);
 	}
 	params->fEvals += 1;
@@ -531,9 +530,9 @@ double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p)
 }
 
 double calcLikNLOpt_gradients(unsigned n, const double *point, double *gradients, void *p){
-	int i,j,clen;
+	int i,j;
 	struct clam_lik_params * params = (struct clam_lik_params *) p;
-	double localNNZ = params->nnz;
+	//double localNNZ = params->nnz;
 	double output = 666.0; 
 	double lik=0.0;
 	double newF;

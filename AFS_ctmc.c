@@ -335,268 +335,193 @@ void fillExpectedAFS_unnorm_mat(afsStateSpace *S, double **visitMat , double *in
 	}
 }
 
+/// I believe the below is now completely unused
 //fillLogAFS -- uses cxsparse library for inversion -- will replace above
-void fillLogAFS(void * p){
-	struct im_lik_params * params = (struct im_lik_params *) p;
-	struct expoMatObj anExpoMatObj;
-	int i,j, N = params->stateSpace->nstates;
- 	cs *spMat, *mt, *ident, *eye, *tmpMat ,*tmpMat2;
-	double timeV, sum, thetaA, theta2, mig1, mig2;
-	int Na;
-	gsl_vector *tmpStates;
-	
-	
-	//initialize some vectors
-	gsl_vector_set_zero(params->rates);
-	tmpStates = gsl_vector_alloc(N);
-	
-	//For straight MLE the paramVector takes the form [N2,NA,m1,m2,t]
-	theta2 = gsl_vector_get(params->paramVector,0);
-	thetaA = gsl_vector_get(params->paramVector,1);
-	mig1 = gsl_vector_get(params->paramVector,2);
-	mig2 = gsl_vector_get(params->paramVector,3);
-	timeV = gsl_vector_get(params->paramVector,4);
-//	printf("params-> %f %f %f %f %f\n",theta2,thetaA,mig1,mig2,timeV);
-	//fill transMat
-	tmpMat= fillTransitionMatrixArray_embed_ctmc(params->stateSpace, params->topA, params->moveA,
-	 	&(params->nnz),params->dim1, params->dim2,1.0, theta2, mig1, mig2, 
-	 	params->new, params->newdim1, params->newdim2,params->rates);
-	
-	//using CSparse
-	// S = (I-P)^-1
-	
-	//add negative ident
-	ident = cs_spalloc(N,N,N,1,1);
-	for(i=0;i<N;i++) cs_entry(ident,i,i,1);
-	eye = cs_compress(ident);
-	spMat = cs_add(eye,tmpMat,1.0,-1.0);
-	mt = cs_transpose(spMat,1);
-	
-	////Compute Entire Inverse Mat
-	for(j=0;j<N;j++){
-		//create unit array for solve
-		for(i=0; i<N; i++)params->b[i] = 0.0;
-		params->b[j]=1.0;
-		cs_lusol(0, mt, params->b, 1e-12);
-		for(i=0; i<N; i++){
-			params->invMat[j][i]=params->b[i];
-			gsl_matrix_set(params->invMatGSL,j,i,params->b[i]);
-		}
-		printf("inv mat row %d complete\n",j);
-	}
-	
-	//Get Island Time 0-INF Unnormal
-	gsl_matrix_set_zero(params->expAFS);
-	for(i=0; i<N; i++)params->b[i] = params->invMat[0][i];
-	fillExpectedAFS_unnorm(params->stateSpace, params->b,params->rates,params->expAFS);
-	// printf("////////////////////Island Time 0 - INF unnormalized\n");
-	// for(i=0;i< (params->expAFS->size1) ;i++){
-	// 	for(j=0;j< (params->expAFS->size2);j++){
-	// 		printf("%.5f ",gsl_matrix_get(params->expAFS,i,j));
-	// 	}
-	// 	printf("\n");
-	// }
-	
-	//Matrix Exponentiation to get state vector at time t
-	//
-
-	//push indices
-	for(i=0;i<params->nnz;i++){
-		params->expodim1[i]=params->newdim1[i]+1;
-		params->expodim2[i]=params->newdim2[i]+1;
-		
-	}
-	//reset expoInit
-	for(i = 0;i<N;i++){
-		params->expoInit[i]=0.0;
-		params->expoResult[i]=0.0;
-	}
-	params->expoInit[0] = 1.0;
-
-	//sanity check ///////
-//	for(i=0;i<params->nnz;i++){
-//		printf("a[%d]=%f expodim1=%d expodim2=%d \n", i,params->anExpoMatObj->a[i],params->anExpoMatObj->ai[i],params->anExpoMatObj->aj[i]);
-//	}
-//	printf("rank=%d nnz=%d\n", params->anExpoMatObj->rank, params->anExpoMatObj->nnz);
-	
-//	for(i=0;i<N;i++)printf("params->anExpoMatObj->resultSpace[%d]=%f\n",i,params->anExpoMatObj->resultSpace[i]);
-//	for(i=0;i<N;i++)printf("params->anExpoMatObj->initVec[%d]=%f\n",i,params->anExpoMatObj->initVec[i]);
-	
-	anExpoMatObj.ai = params->expodim1;
-	anExpoMatObj.aj = params->expodim2;
-	anExpoMatObj.a = params->new;
-	anExpoMatObj.initVec = params->expoInit;
-	anExpoMatObj.resultSpace = params->expoResult;
-//	sparse_exponential_single_row(N, params->nnz, anExpoMatObj.ai, anExpoMatObj.aj,
-//		anExpoMatObj.a, timeV,anExpoMatObj.initVec, params->expoResult, 0); 
-	//state vector at time t stored in b[i] 
-	for(i=0; i<N; i++){
-		params->b[i] = params->expoResult[i];
-//		printf("params->expoResult[%d]=%f\n",i,params->expoResult[i] );		
-		gsl_vector_set(tmpStates,i,params->expoResult[i]);
-	}
-
-	gsl_blas_dgemv(CblasTrans, 1.0, params->invMatGSL,tmpStates, 0.0, params->resVec);
-	
-
-	for(i=0; i<N; i++){
-		params->b[i] = gsl_vector_get(params->resVec,i);
-	}
-	gsl_matrix_set_zero(params->expAFS2);
-	fillExpectedAFS_unnorm(params->stateSpace, params->b,params->rates,params->expAFS2);
-	
-	//now subtract older AFS (t_t - t_INF) from total AFS (t_0 - t_INF)
-	/////////////////
-	///////
-//	printf("////////////////////Island time0-t=%f unnormalized\n",timeV);
-	
-	gsl_matrix_sub(params->expAFS,params->expAFS2);
-	// for(i=0;i< (params->expAFS->size1) ;i++){
-	// 	for(j=0;j< (params->expAFS->size2);j++){
-	// 		printf("%.5f ",gsl_matrix_get(params->expAFS,i,j));
-	// 	}
-	// 	printf("\n");
-	// }
-	// printf("////////////////////\n");
-	
-	
-	//mapping of states already complete when params initialized
-	//state vector at time t stored in st[] for largerStateSpace; use reverseMap
-	for(i=0;i<N;i++)params->st[i]=0.0;
-	for(i=0;i<N;i++)params->st[params->map[i]]+=params->expoResult[i];
-	for(i=0; i<params->reducedStateSpace->nstates; i++){
-		gsl_vector_set(params->ancStateVec,i,params->st[params->reverseMap[i]]);
-	}
-	Na = params->reducedStateSpace->nstates;
-	//fill up ancestral transition matrix
-	gsl_vector_set_zero(params->rates);
-	tmpMat2= fillTransitionMatrixArray_embed_ctmc(params->reducedStateSpace, params->topA2, params->moveA2, &(params->nnzA),
-		params->dim1A, params->dim2A,thetaA, 0, 0, 0,params->new, params->newdim1, params->newdim2,params->rates);
-		
-	ident = cs_spalloc(Na,Na,Na,1,1);
-	for(i=0;i<Na;i++) cs_entry(ident,i,i,1);
-	eye = cs_compress(ident);
-	spMat = cs_add(eye,tmpMat2,1.0,-1.0);
-	mt = cs_transpose(spMat,1);
-
-//	gsl_matrix_free(invMatGSL);
-//	invMatGSLA = gsl_matrix_calloc(Na,Na);
-
-	for(j=0;j<Na;j++){
-		//create unit array for solve
-		for(i=0; i<Na; i++)params->b[i] = 0.0;
-		params->b[j]=1.0;
-		cs_lusol(0, mt, params->b, 1e-12);
-		for(i=0; i<Na; i++){
-			gsl_matrix_set(params->invMatGSLA,j,i,params->b[i]);
-		}
-	}
-
-	//get contribution starting at st
-	gsl_blas_dgemv(CblasTrans, 1.0, params->invMatGSLA, params->ancStateVec, 0.0, params->ancResVec);
-	for(i=0; i<Na; i++)params->b[i] = gsl_vector_get(params->ancResVec,i);
-	gsl_matrix_set_zero(params->expAFS2);
-	fillExpectedAFS_unnorm(params->reducedStateSpace, params->b,params->rates,params->expAFS2);
-	
-	////////////////////normalized IM AFS
-	gsl_matrix_add(params->expAFS,params->expAFS2);
-	sum = matrixSumDouble(params->expAFS);
-	gsl_matrix_scale(params->expAFS, 1.0 / sum);
-	
-	
-	///////////// Replace AFS with log(AFS)
-	// for(i=0;i<params->expAFS->size1;i++){
-	// 	for(j=0;j<params->expAFS->size2;j++){
-	// 		gsl_matrix_set(params->expAFS,i,j,log(gsl_matrix_get(params->expAFS,i,j)));
-	// 	}
-	// }
-	
-	//clean up
-	cs_spfree(spMat);
-	cs_spfree(mt);
-	cs_spfree(ident);
-	cs_spfree(eye);
-	cs_spfree(tmpMat);
-	cs_spfree(tmpMat2);
-	gsl_vector_free(tmpStates);
-}
-
-
-// gsl_matrix *afs_im_period1(void * p){
+// void fillLogAFS(void * p){
 // 	struct im_lik_params * params = (struct im_lik_params *) p;
-// 	int i,j, N = params->stateSpace->nstates,n1,n2;
-// 	double b[N],invMat[N][N];
-// 	struct cs_di_sparse *spMat, *mt, *ident, *eye, *tmpMat;
-// 	gsl_matrix *expAFS2;
-// 
-// 	n1 = params->stateSpace->states[0]->popMats[0]->size1 - 1;
-// 	n2 = params->stateSpace->states[0]->popMats[0]->size2 - 1;
-// 	//Fill original trans mats	
-// 	tmpMat= fillTransitionMatrixArray_embed_ctmc(params->stateSpace, params->topA, params->moveA, &(params->nnz),
-// 		params->dim1, params->dim2,1.0,gsl_vector_get(params->paramVector,0),gsl_vector_get(params->paramVector,2),
-// 		gsl_vector_get(params->paramVector,3),params->new, params->newdim1, params->newdim2,params->rates);
-// 	//Step 1.
+// 	struct expoMatObj anExpoMatObj;
+// 	int i,j, N = params->stateSpace->nstates;
+//  	cs *spMat, *mt, *ident, *eye, *tmpMat ,*tmpMat2;
+// 	double timeV, sum, thetaA, theta2, mig1, mig2;
+// 	int Na;
+// 	gsl_vector *tmpStates;
+// 	
+// 	
+// 	//initialize some vectors
+// 	gsl_vector_set_zero(params->rates);
+// 	tmpStates = gsl_vector_alloc(N);
+// 	
+// 	//For straight MLE the paramVector takes the form [N2,NA,m1,m2,t]
+// 	theta2 = gsl_vector_get(params->paramVector,0);
+// 	thetaA = gsl_vector_get(params->paramVector,1);
+// 	mig1 = gsl_vector_get(params->paramVector,2);
+// 	mig2 = gsl_vector_get(params->paramVector,3);
+// 	timeV = gsl_vector_get(params->paramVector,4);
+// //	printf("params-> %f %f %f %f %f\n",theta2,thetaA,mig1,mig2,timeV);
+// 	//fill transMat
+// 	tmpMat= fillTransitionMatrixArray_embed_ctmc(params->stateSpace, params->topA, params->moveA,
+// 	 	&(params->nnz),params->dim1, params->dim2,1.0, theta2, mig1, mig2, 
+// 	 	params->new, params->newdim1, params->newdim2,params->rates);
+// 	
 // 	//using CSparse
 // 	// S = (I-P)^-1
+// 	
 // 	//add negative ident
 // 	ident = cs_spalloc(N,N,N,1,1);
 // 	for(i=0;i<N;i++) cs_entry(ident,i,i,1);
 // 	eye = cs_compress(ident);
 // 	spMat = cs_add(eye,tmpMat,1.0,-1.0);
-// 	mt = cs_transpose(spMat,1);	
-// 	//create unit array for solve
-// 	for(i=0; i<N; i++){ 
-// 		b[i] = 0.0;
-// 	}
-// 	b[0] = 1.0;
-// 	cs_dropzeros(mt);
-// 	cs_lusol(0, mt, b, 1e-12);//b now holds row of interest
-// 	//get AFS contribution form time 0 to time INF
-// 	gsl_matrix_set_zero(params->expAFS);
-// 	fillExpectedAFS_unnorm(params->stateSpace, b,params->rates,params->expAFS);
-// 
-// 	printf("////////////////////time0-INF\n");
-// 	for(i=0;i< (n1+1) ;i++){
-// 		for(j=0;j< (n2+1);j++){
-// 			printf("%.5f ",gsl_matrix_get(params->expAFS,i,j));
-// 		}
-// 		printf("\n");
-// 	}
+// 	mt = cs_transpose(spMat,1);
 // 	
-// 	//Step 2
-// 	//Exponentiate matrix at time using CTMC representation
-// 
-// 	sparse_exponential_single_row(N, params->nnz, params->newdim1, params->newdim2,
-// 		params->new, gsl_vector_get(params->paramVector,4),b, params->resultTmp, 0); 
-// 	
-// 	//recompute Inverse
+// 	////Compute Entire Inverse Mat
 // 	for(j=0;j<N;j++){
 // 		//create unit array for solve
-// 		b[j]=1.0;
-// 		if(j>0)b[j-1]=0.0;
-// 		cs_lusol(0, mt, b, 1e-12);
-// 		for(i=0; i<N; i++)params->invMat[j][i]=b[i]*params->resultTmp[j];
-// 	}
-// 	
-// 	expAFS2 = gsl_matrix_alloc(params->expAFS->size1,params->expAFS->size2);
-// 	gsl_matrix_set_zero(expAFS2);
-// //	fillExpectedAFS_unnorm_mat(params->stateSpace, params->invMat,params->rates,expAFS2);
-// 
-// 	printf("////////////////////time0-t\n");
-// 	
-// 	gsl_matrix_sub(params->expAFS,expAFS2);
-// 	for(i=0;i< (n1+1) ;i++){
-// 		for(j=0;j< (n2+1);j++){
-// 			printf("%.5f ",gsl_matrix_get(params->expAFS,i,j));
+// 		for(i=0; i<N; i++)params->b[i] = 0.0;
+// 		params->b[j]=1.0;
+// 		cs_lusol(0, mt, params->b, 1e-12);
+// 		for(i=0; i<N; i++){
+// 			params->invMat[j][i]=params->b[i];
+// 			gsl_matrix_set(params->invMatGSL,j,i,params->b[i]);
 // 		}
-// 		printf("\n");
+// 		printf("inv mat row %d complete\n",j);
 // 	}
+// 	
+// 	//Get Island Time 0-INF Unnormal
+// 	gsl_matrix_set_zero(params->expAFS);
+// 	for(i=0; i<N; i++)params->b[i] = params->invMat[0][i];
+// 	fillExpectedAFS_unnorm(params->stateSpace, params->b,params->rates,params->expAFS);
+// 	// printf("////////////////////Island Time 0 - INF unnormalized\n");
+// 	// for(i=0;i< (params->expAFS->size1) ;i++){
+// 	// 	for(j=0;j< (params->expAFS->size2);j++){
+// 	// 		printf("%.5f ",gsl_matrix_get(params->expAFS,i,j));
+// 	// 	}
+// 	// 	printf("\n");
+// 	// }
+// 	
+// 	//Matrix Exponentiation to get state vector at time t
+// 	//
+// 
+// 	//push indices
+// 	for(i=0;i<params->nnz;i++){
+// 		params->expodim1[i]=params->newdim1[i]+1;
+// 		params->expodim2[i]=params->newdim2[i]+1;
+// 		
+// 	}
+// 	//reset expoInit
+// 	for(i = 0;i<N;i++){
+// 		params->expoInit[i]=0.0;
+// 		params->expoResult[i]=0.0;
+// 	}
+// 	params->expoInit[0] = 1.0;
+// 
+// 	//sanity check ///////
+// //	for(i=0;i<params->nnz;i++){
+// //		printf("a[%d]=%f expodim1=%d expodim2=%d \n", i,params->anExpoMatObj->a[i],params->anExpoMatObj->ai[i],params->anExpoMatObj->aj[i]);
+// //	}
+// //	printf("rank=%d nnz=%d\n", params->anExpoMatObj->rank, params->anExpoMatObj->nnz);
+// 	
+// //	for(i=0;i<N;i++)printf("params->anExpoMatObj->resultSpace[%d]=%f\n",i,params->anExpoMatObj->resultSpace[i]);
+// //	for(i=0;i<N;i++)printf("params->anExpoMatObj->initVec[%d]=%f\n",i,params->anExpoMatObj->initVec[i]);
+// 	
+// 	anExpoMatObj.ai = params->expodim1;
+// 	anExpoMatObj.aj = params->expodim2;
+// 	anExpoMatObj.a = params->new;
+// 	anExpoMatObj.initVec = params->expoInit;
+// 	anExpoMatObj.resultSpace = params->expoResult;
+// //	sparse_exponential_single_row(N, params->nnz, anExpoMatObj.ai, anExpoMatObj.aj,
+// //		anExpoMatObj.a, timeV,anExpoMatObj.initVec, params->expoResult, 0); 
+// 	//state vector at time t stored in b[i] 
+// 	for(i=0; i<N; i++){
+// 		params->b[i] = params->expoResult[i];
+// //		printf("params->expoResult[%d]=%f\n",i,params->expoResult[i] );		
+// 		gsl_vector_set(tmpStates,i,params->expoResult[i]);
+// 	}
+// 
+// 	gsl_blas_dgemv(CblasTrans, 1.0, params->invMatGSL,tmpStates, 0.0, params->resVec);
+// 	
+// 
+// 	for(i=0; i<N; i++){
+// 		params->b[i] = gsl_vector_get(params->resVec,i);
+// 	}
+// 	gsl_matrix_set_zero(params->expAFS2);
+// 	fillExpectedAFS_unnorm(params->stateSpace, params->b,params->rates,params->expAFS2);
+// 	
+// 	//now subtract older AFS (t_t - t_INF) from total AFS (t_0 - t_INF)
+// 	/////////////////
+// 	///////
+// //	printf("////////////////////Island time0-t=%f unnormalized\n",timeV);
+// 	
+// 	gsl_matrix_sub(params->expAFS,params->expAFS2);
+// 	// for(i=0;i< (params->expAFS->size1) ;i++){
+// 	// 	for(j=0;j< (params->expAFS->size2);j++){
+// 	// 		printf("%.5f ",gsl_matrix_get(params->expAFS,i,j));
+// 	// 	}
+// 	// 	printf("\n");
+// 	// }
+// 	// printf("////////////////////\n");
+// 	
+// 	
+// 	//mapping of states already complete when params initialized
+// 	//state vector at time t stored in st[] for largerStateSpace; use reverseMap
+// 	for(i=0;i<N;i++)params->st[i]=0.0;
+// 	for(i=0;i<N;i++)params->st[params->map[i]]+=params->expoResult[i];
+// 	for(i=0; i<params->reducedStateSpace->nstates; i++){
+// 		gsl_vector_set(params->ancStateVec,i,params->st[params->reverseMap[i]]);
+// 	}
+// 	Na = params->reducedStateSpace->nstates;
+// 	//fill up ancestral transition matrix
+// 	gsl_vector_set_zero(params->rates);
+// 	tmpMat2= fillTransitionMatrixArray_embed_ctmc(params->reducedStateSpace, params->topA2, params->moveA2, &(params->nnzA),
+// 		params->dim1A, params->dim2A,thetaA, 0, 0, 0,params->new, params->newdim1, params->newdim2,params->rates);
+// 		
+// 	ident = cs_spalloc(Na,Na,Na,1,1);
+// 	for(i=0;i<Na;i++) cs_entry(ident,i,i,1);
+// 	eye = cs_compress(ident);
+// 	spMat = cs_add(eye,tmpMat2,1.0,-1.0);
+// 	mt = cs_transpose(spMat,1);
+// 
+// //	gsl_matrix_free(invMatGSL);
+// //	invMatGSLA = gsl_matrix_calloc(Na,Na);
+// 
+// 	for(j=0;j<Na;j++){
+// 		//create unit array for solve
+// 		for(i=0; i<Na; i++)params->b[i] = 0.0;
+// 		params->b[j]=1.0;
+// 		cs_lusol(0, mt, params->b, 1e-12);
+// 		for(i=0; i<Na; i++){
+// 			gsl_matrix_set(params->invMatGSLA,j,i,params->b[i]);
+// 		}
+// 	}
+// 
+// 	//get contribution starting at st
+// 	gsl_blas_dgemv(CblasTrans, 1.0, params->invMatGSLA, params->ancStateVec, 0.0, params->ancResVec);
+// 	for(i=0; i<Na; i++)params->b[i] = gsl_vector_get(params->ancResVec,i);
+// 	gsl_matrix_set_zero(params->expAFS2);
+// 	fillExpectedAFS_unnorm(params->reducedStateSpace, params->b,params->rates,params->expAFS2);
+// 	
+// 	////////////////////normalized IM AFS
+// 	gsl_matrix_add(params->expAFS,params->expAFS2);
+// 	sum = matrixSumDouble(params->expAFS);
+// 	gsl_matrix_scale(params->expAFS, 1.0 / sum);
+// 	
+// 	
+// 	///////////// Replace AFS with log(AFS)
+// 	// for(i=0;i<params->expAFS->size1;i++){
+// 	// 	for(j=0;j<params->expAFS->size2;j++){
+// 	// 		gsl_matrix_set(params->expAFS,i,j,log(gsl_matrix_get(params->expAFS,i,j)));
+// 	// 	}
+// 	// }
+// 	
+// 	//clean up
 // 	cs_spfree(spMat);
 // 	cs_spfree(mt);
 // 	cs_spfree(ident);
 // 	cs_spfree(eye);
 // 	cs_spfree(tmpMat);
+// 	cs_spfree(tmpMat2);
+// 	gsl_vector_free(tmpStates);
 // }
+
 
 //////////////////// Uniformization Algorithm for Exponentiation
 /// P. 413 from Stewart Book 
