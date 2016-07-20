@@ -48,7 +48,7 @@ static char help[] = "im_clam\n\
 	\t-x <theta_2, theta_A, mig12, mig21, t_div> parameter starting values\n\
 	\t-obs (prints out observed AFS as well as that expected from MLE params)\n\
 	\t-u mutation rate per base pair per generation (only used to unscale parameters)\n\
-	\t-g generation time (gens/year)
+	\t-g generation time (gens/year)\n\
 	\t-r randomSeed\n\
 	\t-v verbose output\n";
 	
