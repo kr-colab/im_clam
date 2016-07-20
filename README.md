@@ -99,5 +99,32 @@ With our preliminary files created we are ready to do something useful with them
 Lets take a quick look at the usage statement from `im_clam`
 
 ```
-```
+$ ./im_clam 
 
+.___   _____             .__
+|   | /     \       ____ |  | _____    _____
+|   |/  \ /  \    _/ ___\|  | \__  \  /     \
+|   /    Y    \   \  \___|  |__/ __ \|  Y Y  \
+|___\____|__  /____\___  >____(____  /__|_|  /
+            \/_____/   \/          \/      \/
+
+
+im_clam -- Isolation with Migration Composite Likelihood Analysis using Markov chains
+
+
+im_clam
+	Example: mpiexec -n <np> ./im_clam -s <stateSpace file> -m <mats file> -d <data file> 
+
+	options:
+		-exp expected value mode (requires -x flag too)
+		-mo multiple optimizations from different start points
+		-global multi-level optimization (MLSL algo.)
+		-x <theta_2, theta_A, mig12, mig21, t_div> parameter starting values
+		-obs (prints out observed AFS as well as that expected from MLE params)
+		-u mutation rate per base pair per generation (only used to unscale parameters)
+		-g generation time (gens/year)
+		-r randomSeed
+		-v verbose output
+
+```
+as it says, the proper call is to use mpiexec to then run `im_clam`. 
