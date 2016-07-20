@@ -177,4 +177,30 @@ For optimization I provide two other options. The `-mo` flag with run the LS-BFG
 
 If one uses the `-exp` flag the program does not optimize a model, but instead just calculates the expected AFS under the parameterization specified by the `-x` flag. For instance
 
- 
+ ```
+ $ $PETSC_DIR/arch-linux2-c-debug/bin/mpiexec -n 1 ./im_clam -s stateSpaceFiles/testSS_33 -m stateSpaceFiles/testSS_33_mats -exp -x 1,1,3,1,1 
+
+.___   _____             .__
+|   | /     \       ____ |  | _____    _____
+|   |/  \ /  \    _/ ___\|  | \__  \  /     \
+|   /    Y    \   \  \___|  |__/ __ \|  Y Y  \
+|___\____|__  /____\___  >____(____  /__|_|  /
+            \/_____/   \/          \/      \/
+
+
+im_clam -- Isolation with Migration Composite Likelihood Analysis using Markov chains
+
+
+expected value run mode
+Expected AFS:
+0.00 0.22 0.07 0.03 
+0.27 0.07 0.04 0.03 
+0.08 0.04 0.03 0.04 
+0.02 0.02 0.02 0.00 
+///////////
+parameter values used:
+1.000000	1.000000	3.000000	1.000000	1.000000	
+
+total run time:0.076992 secs
+ Liklihood Func. Evals: 0
+```
