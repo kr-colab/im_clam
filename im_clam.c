@@ -80,6 +80,10 @@ int main(int argc, char **argv){
 		//printf("A.D. Kern 2015\n///////////////////\n");
 		printf("\n\n");
 	}
+	if(argc<2){
+		printf("%s",help);
+		exit(666);
+	}
 	time1=clock();
 	
 	ierr = PetscOptionsGetString(NULL,"-s",filename,PETSC_MAX_PATH_LEN,&flg);CHKERRQ(ierr);
