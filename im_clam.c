@@ -44,8 +44,14 @@ static char help[] = "im_clam\n\
 	Example: mpiexec -n <np> ./im_clam -s <stateSpace file> -m <mats file> -d <data file> \n\n\toptions:\n\
 	\t-exp expected value mode (requires -x flag too)\n\
 	\t-mo multiple optimizations from different start points\n\
+	\t-global multi-level optimization (MLSL algo.)\n\
 	\t-x <theta_2, theta_A, mig12, mig21, t_div> parameter starting values\n\
-	\t-obs (prints out observed AFS as well as that expected from MLE params)\n";
+	\t-obs (prints out observed AFS as well as that expected from MLE params)\n\
+	\t-u mutation rate per base pair per generation (only used to unscale parameters)\n\
+	\t-g generation time (gens/year)
+	\t-r randomSeed\n\
+	\t-v verbose output\n";
+	
 
 
 int main(int argc, char **argv){
@@ -64,6 +70,7 @@ int main(int argc, char **argv){
 	int dim=5;
 	double snpNumber, pi_est, p, N0;
 	double u=1e-8;
+	int genPerYear=20;
 	FILE *infile;
 	
 	///////////////////
@@ -90,6 +97,8 @@ int main(int argc, char **argv){
 	ierr = PetscOptionsGetString(NULL,"-m",filename2,PETSC_MAX_PATH_LEN,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetString(NULL,"-d",filename3,PETSC_MAX_PATH_LEN,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL,"-r",&seed,&flg);CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL,"-u",&u,&flg);CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL,"-g",&genPerYear,&flg);CHKERRQ(ierr);
 	if(!flg) seed=time(NULL);
 	
 	//printf("rank:%d %d\n",rank,seed);
@@ -266,7 +275,7 @@ int main(int argc, char **argv){
 			
 			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
 			for(i=0;i<4;i++)printf("%f\t",(float)mle[i]*N0);
-			printf("%f\t",(float)mle[i] * N0 / 15);
+			printf("%f\t",(float)mle[i] * N0 * 4.0/ (float)genPerYear);
 			printf("\n\nlikelihood: %lf\n",-lik);
 			currentParams->nnz = nnz;
 			printf("\nExpected AFS:\n");
@@ -332,7 +341,7 @@ int main(int argc, char **argv){
 			
 			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
 			for(i=0;i<4;i++)printf("%f\t",(float)mle[i]*N0);
-			printf("%f\t",(float)mle[i] * N0 / 15);
+			printf("%f\t",(float)mle[i] * N0 * 4.0/ genPerYear);
 			
 			printf("\n\nlikelihood: %lf\n",-lik);
 			currentParams->nnz = nnz;
