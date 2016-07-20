@@ -76,13 +76,28 @@ When compilation is complete you will be left with three programs
 - `cmc_topol` - this calculates statistics about the eventual transition matrix. 
 - `im_clam` - the main program that will compute the expected AFS as well as do inference
 
-## Basic Usage
+## Usage
+There are three steps associated with running analyses using `im_clam`. The first two involve calculating the state space for the sample configuration of interest and pre-computing quantities of the transition matrix of the Markov chain. The third step is to run `im_clam` itself with the outputs from the first two steps to either do parameter inference or to calculate the expected AFS from a given model parameterization.
+
+---
+### Computing the state space
 The first step to using `im_clam` is  calculating the state space for a given sample configuration and its associated topology matrix. This is done using the programs `cmc_stateSpace` and `cmc_topol`. For instance imagine you were interested in a sample of size n=3 from one population and n=4 from a second. To calculate the state space we would use the following call
 ```
 ./cmc_stateSpace 3 4 > ss_3_4
 ```
-This saves the state space to the file `ss_3_4`. Next we calculate the topology matrix
+This saves the state space to the file `ss_3_4`. The output of this program provides states in the form described in the Kern and Hey paper, along with a simple header containing information on the sample sizes specified and the number of associated states. 
+
+Next we calculate the topology matrix
 ```
 ./cmc_topol ss_3_4 > ss_3_4_mats
 ```
-Those two files, `ss_3_4` and `ss_3_4_mats` will be used as input to `im_clam`. I have provided a number of example state space files and their associated topology matrices in the directory `stateSpaceFiles`. Each of these is named after the sample sizes: for instance `stateSpaceFiles/testSS_33` contains the stateSpace for samples of size n1=n2=3, and its associated topology matrix is named `stateSpaceFiles/testSS_33_mats`. These can get you started but you can always calculate your own as shown above.
+The topology matrix output contains one line stating the number of non-zero entries in the transition matrix, followed by a series of lines that information on the topological probability of a move, the move type, and the coordinates of that move in the transition matrix. This output isn't really meant for human consumption, and is done to ease calculations later on. Those two files, `ss_3_4` and `ss_3_4_mats` will be used as input to `im_clam`. I have provided a number of example state space files and their associated topology matrices in the directory `stateSpaceFiles`. Each of these is named after the sample sizes: for instance `stateSpaceFiles/testSS_33` contains the stateSpace for samples of size n1=n2=3, and its associated topology matrix is named `stateSpaceFiles/testSS_33_mats`. These can get you started but you can always calculate your own as shown above.
+
+### Running `im_clam`
+With our preliminary files created we are ready to do something useful with them using `im_clam`. A few notes first on this program. `im_clam` makes heavy use of the `petsc` library, a parallel library for numerical calculation. As a result calls to `im_clam` should be done through `mpiexec` or similar (it depends on your MPI installation). `petsc` itself will output a certain amount of information to the screen as the user runs `im_clam`. In large part this can be ignored. Generally runs of `im_clam` for decent sample sizes (say n > 5) should be done on a machine with many cores. I have run `im_clam` on hundreds of cores on a cluster with excellent results in terms of runtime. Your mileage may vary though as `im_clam` is very sensitive to the speed of communication between nodes.
+
+Lets take a quick look at the usage statement from `im_clam`
+
+```
+```
+
