@@ -127,7 +127,10 @@ im_clam
 		-v verbose output
 
 ```
-as it says, the proper call is to use mpiexec to then run `im_clam`. There are a few options for use with the program. The first is the run mode. When no options are provided `im_clam` will do parameter estimation using the state space file, topology matrix, and data file specified. Parameter optimization using the low-strage BFGS algorithm. All optimization uses the `nlopt` library and you can read about the optimization algorithms [here](http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms). Here is an example
+as it says, the proper call is to use mpiexec to then run `im_clam`. 
+
+#### Parameter Estimation
+There are a few options for use with the program. The first is the run mode. When no options are provided `im_clam` will do parameter estimation using the state space file, topology matrix, and data file specified. Parameter optimization using the low-strage BFGS algorithm. All optimization uses the `nlopt` library and you can read about the optimization algorithms [here](http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms). Here is an example
 
 ```
 $ $PETSC_DIR/arch-linux2-c-debug/bin/mpiexec -n 2 ./im_clam -s stateSpaceFiles/testSS_33 -m stateSpaceFiles/testSS_33_mats -d exampleInput_33 -u 0.00001
@@ -175,6 +178,7 @@ A few things to note. First I am launching `im_clam` with the version of `MPI` t
 
 For optimization I provide two other options. The `-mo` flag with run the LS-BFGS three independent times from different starting points. The `-global` flag runs the Multi-Level Single-Linkage algorithm described [here](http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms#MLSL_.28Multi-Level_Single-Linkage.29). The starting parameter vector for optimization can be set with the `-x` flag which takes as its argument a comma separated list of parameters in the specified order.
 
+#### Expected AFS Mode
 If one uses the `-exp` flag the program does not optimize a model, but instead just calculates the expected AFS under the parameterization specified by the `-x` flag. For instance
 
  ```
@@ -205,3 +209,14 @@ total run time:0.076992 secs
  Liklihood Func. Evals: 0
 ```
 The `-v` flag gives a verbose output, printing the parameter values and likelihood at each likelihood evaluation. The `-obs` flag outputs the observed AFS specified in the datafile. Finally the `-r` flag enables the user to specify the random seed. 
+
+#### Input file format
+One remaining thing to note is the input file format for `im_clam` for the observed AFS. This is simply a matrix representing the joint AFS for the two populations, with entries being the number of SNPs of that frequency type. An example has been provided called `exampleInput_33`. Here is what that file looks like
+
+```
+0.0000 10430.0000 5621.0000 13423.0000
+10262.0000 307.0000 242.0000 1077.0000
+5647.0000 237.0000 168.0000 591.0000
+13456.0000 1113.0000 569.0000 0.0000
+```
+
