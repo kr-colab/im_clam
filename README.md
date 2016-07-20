@@ -204,3 +204,4 @@ parameter values used:
 total run time:0.076992 secs
  Liklihood Func. Evals: 0
 ```
+The `-v` flag gives a verbose output, printing the parameter values and likelihood at each likelihood evaluation. The `-obs` flag outputs the observed AFS specified in the datafile. Finally the `-r` flag enables the user to specify the random seed. 
