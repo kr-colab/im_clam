@@ -70,7 +70,7 @@ int main(int argc, char **argv){
 	int dim=5;
 	double snpNumber, pi_est, p, N0;
 	double u=1e-8;
-	int genPerYear=20;
+	double genPerYear=20;
 	FILE *infile;
 	
 	///////////////////
