@@ -130,5 +130,44 @@ im_clam
 as it says, the proper call is to use mpiexec to then run `im_clam`. There are a few options for use with the program. The first is the run mode. When no options are provided `im_clam` will do parameter estimation using the state space file, topology matrix, and data file specified. Parameter optimization using the low-strage BFGS algorithm. All optimization uses the `nlopt` library and you can read about the optimization algorithms [here](http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms). Here is an example
 
 ```
+$ $PETSC_DIR/arch-linux2-c-debug/bin/mpiexec -n 1 ./im_clam -s stateSpaceFiles/testSS_33 -m stateSpaceFiles/testSS_33_mats -d exampleInput_33 -u 0.00001
+
+.___   _____             .__
+|   | /     \       ____ |  | _____    _____
+|   |/  \ /  \    _/ ___\|  | \__  \  /     \
+|   /    Y    \   \  \___|  |__/ __ \|  Y Y  \
+|___\____|__  /____\___  >____(____  /__|_|  /
+            \/_____/   \/          \/      \/
+
+
+im_clam -- Isolation with Migration Composite Likelihood Analysis using Markov chains
+
+
+
+Parameter estimation run mode
+
+now optimizing....
+
+initial parameter guess:
+7.564897 8.928837 10.018410 2.071886 4.159601 
+
+Composite Likelihood estimates of IM params (scaled by 1/theta_pop1):
+theta_pop2	theta_anc	mig_1->2	mig_2->1	t_div
+1.013741	0.907719	0.100391	0.098687	2.102067	
+
+Composite Likelihood estimates of IM params (unscaled):
+theta_pop2	theta_anc	mig_1->2	mig_2->1	t_div
+13222.639092	11839.754624	1309.445195	1287.214853	5483.623451	
+
+likelihood: -125869.001406
+
+Expected AFS:
+0.00 0.16 0.09 0.21 
+0.16 0.00 0.00 0.02 
+0.09 0.00 0.00 0.01 
+0.21 0.02 0.01 0.00 
+///////////
+total run time:14.163778 secs
+ Liklihood Func. Evals: 474
 
 ```
