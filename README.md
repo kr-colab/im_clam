@@ -130,7 +130,7 @@ im_clam
 as it says, the proper call is to use mpiexec to then run `im_clam`. There are a few options for use with the program. The first is the run mode. When no options are provided `im_clam` will do parameter estimation using the state space file, topology matrix, and data file specified. Parameter optimization using the low-strage BFGS algorithm. All optimization uses the `nlopt` library and you can read about the optimization algorithms [here](http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms). Here is an example
 
 ```
-$ $PETSC_DIR/arch-linux2-c-debug/bin/mpiexec -n 1 ./im_clam -s stateSpaceFiles/testSS_33 -m stateSpaceFiles/testSS_33_mats -d exampleInput_33 -u 0.00001
+$ $PETSC_DIR/arch-linux2-c-debug/bin/mpiexec -n 2 ./im_clam -s stateSpaceFiles/testSS_33 -m stateSpaceFiles/testSS_33_mats -d exampleInput_33 -u 0.00001
 
 .___   _____             .__
 |   | /     \       ____ |  | _____    _____
@@ -171,3 +171,10 @@ total run time:14.163778 secs
  Liklihood Func. Evals: 474
 
 ```
+A few things to note. First I am launching `im_clam` with the version of `MPI` that we bundled with `petsc`. This is an easy way to make sure that things work correctly on the `MPI` side of things so I recommend that approach. Then I have specified my input files along with a single option, the `-u` flag that will allow me to input a mutation rate for unscaled parameter estimates. `im_clam` then outputs the initial parameter starting point, the scaled estimates of the IM parameters, the unscaled parameter estimates (assumes a mutation rate and a generation time), the likelihood, and the expected AFS under the estimated model.
+
+For optimization I provide two other options. The `-mo` flag with run the LS-BFGS three independent times from different starting points. The `-global` flag runs the Multi-Level Single-Linkage algorithm described [here](http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms#MLSL_.28Multi-Level_Single-Linkage.29). The starting parameter vector for optimization can be set with the `-x` flag which takes as its argument a comma separated list of parameters in the specified order.
+
+If one uses the `-exp` flag the program does not optimize a model, but instead just calculates the expected AFS under the parameterization specified by the `-x` flag. For instance
+
+ 
