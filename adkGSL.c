@@ -457,30 +457,6 @@ void fillCholArrayFromMatrix(gsl_matrix *src, gsl_vector *dest){
 	
 }
 
-// gsl_matrix_invert_lapack-- using lapack library to take matrix inverse. returns 1 upon
-// success; 2 if matrix is singular
-int gsl_matrix_invert_lapack(gsl_matrix *m){
-	int size = m->size1;
-	int info=666;
-	int index[size];
-	double **matrix, *work;
-	matrix = &m->data;
-	
-	work = malloc(sizeof(double) * size * size);
-//	dgetrf_(&size,&size,&matrix[0][0],&size,index,&info);
-//	printf("here\n");
-	if (info){
-		free(work);
-		return 0;
-	}
-//	dgetri_(&size,&matrix[0][0],&size,index,work,&size,&info);
-	free(work);
-	return 1;
-}
-
-
-
-
 
 
 

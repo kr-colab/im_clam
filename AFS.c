@@ -476,7 +476,7 @@ void afsStateSpaceRemovePopulation(afsStateSpace *S, int popn){
 
 afsStateSpace *afsStateSpaceImportFromFile(const char *fileName){
 	int m1,m2,ns;
-	int i,j,l;
+	int i,j,l,c;
 	FILE *infile;
 	afsStateSpace *newStateSpace;
 //	afsObject *newObj;
@@ -491,15 +491,15 @@ afsStateSpace *afsStateSpaceImportFromFile(const char *fileName){
 	}
 	//initialization
 	//define state space size and shape
-	fscanf(infile,"n1: %d n2: %d nstates: %d", &m1, &m2, &ns);
+	c=fscanf(infile,"n1: %d n2: %d nstates: %d", &m1, &m2, &ns);
 	newStateSpace = afsStateSpaceNew();
 	newStateSpace->nstates = ns;
-	fgets(line,linebuf,infile);
+	c=fgets(line,linebuf,infile);
 
 	for(l=0;l<ns;l++){
 		newStateSpace->states[l] = afsObjectNew(m1,m2);
 		for(i=0;i<m1+1;i++){
-			fgets(line,linebuf,infile);
+			c=fgets(line,linebuf,infile);
 	//		printf("%s\n",line);
 	//		printf("----\n");
 			token = strtok(line,search);
@@ -519,7 +519,7 @@ afsStateSpace *afsStateSpaceImportFromFile(const char *fileName){
 			}
 
 		}
-		fgets(line,linebuf,infile);
+		c=fgets(line,linebuf,infile);
 		newStateSpace->states[l]->aCounts[0] = matrixSum(newStateSpace->states[l]->popMats[0]);
 		newStateSpace->states[l]->aCounts[1] = matrixSum(newStateSpace->states[l]->popMats[1]);
 		newStateSpace->states[l]->nalleles = afsObjectCount(newStateSpace->states[l]);
