@@ -668,3 +668,48 @@ void maximizeLikNLOpt_MLSL(double *lik, void *p, double *mle){
 	
 	
 }
+
+
+///////////////// Hessian stuff ///////////////////
+
+double hessianMatrix_element(double lik, double *mle, int i, int j, double hi, double hj, void *p){
+	struct clam_lik_params * params = (struct clam_lik_params *) p;
+	double Pi0, Pj0,output;
+	
+	Pi0 = mle[i]; Pj0 = mle[j];
+	
+	
+	if(i==j){
+		mle[i] = Pi0 + hi;
+	        fp = calcLikNLOpt(5,mle,Null,p)
+	        mle[i] = Pj0 - hi
+	        fm = calcLikNLOpt(5,mle,Null,p)
+	        output = (fp - 2*lik + fm)/hi**2
+	}
+	else{
+		// f(xi + hi, xj + h)
+	        mle[i] = Pi0 + hi
+	        mle[j] = Pj0 + hj
+	        fpp = calcLikNLOpt(5,mle,Null,p)
+
+	        // f(xi + hi, xj - hj)
+	        mle[i] = Pi0 + hi
+	        mle[j] = Pj0 - hj
+	        fpm = calcLikNLOpt(5,mle,Null,p)
+
+	        // f(xi - hi, xj + hj)
+	        mle[i] = Pi0 - hi
+	        mle[j] = Pj0 + hj
+	        fmp = calcLikNLOpt(5,mle,Null,p)
+
+	        // f(xi - hi, xj - hj)
+	        mle[i] = Pi0 - hi
+	        mle[j] = Pj0 - hj
+	        fmm = calcLikNLOpt(5,mle,Null,p)
+
+	        output = (fpp - fpm - fmp + fmm)/(4 * hi * hj)
+	}
+	mle[i]=Pi0; mle[j]=Pj0;
+	return output
+}
+
