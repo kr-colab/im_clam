@@ -5,7 +5,7 @@ MY_CFLAGS =  -Wall -lm -lgsl -lcxsparse -llapack -lblas -lgslcblas -I/usr/includ
 COMMON = AFS.c sites.c multimin.c adkGSL.c adkCSparse.c
 
 HEADERS = AFS.h 
-GLIB = `pkg-config --cflags glib-2.0` `pkg-config --libs glib-2.0`
+GLIB = `pkg-config --cflags glib-2.0 gsl` `pkg-config --libs glib-2.0 gsl`
 
 
 include ${PETSC_DIR}/conf/variables
