@@ -734,13 +734,13 @@ gsl_matrix *hessian(double *mle, void *p){
 gsl_matrix *getFisherInfoMatrix(double *mle, void *p){
 	gsl_matrix *H;
 	gsl_matrix *fi;
-	gsl_permutation *p = gsl_permutation_alloc(5);
+	gsl_permutation *perm = gsl_permutation_alloc(5);
 	int s;
 	
 	H = hessian(mle,p);
 	fi = gsl_matrix_alloc(5,5);
 	gsl_matrix_scale(H,-1.0);
-	gsl_linalg_LU_decomp (H, p, &s);    
-	gsl_linalg_LU_invert (H, p, fi);
+	gsl_linalg_LU_decomp (H, perm, &s);    
+	gsl_linalg_LU_invert (H, perm, fi);
 	return(fi);
 }
