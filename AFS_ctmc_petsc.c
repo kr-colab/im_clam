@@ -716,7 +716,7 @@ double hessianMatrix_element(double lik, double *mle, int i, int j, double hi, d
 
 gsl_matrix *hessian(double *mle, double lik, void *p){
 	int i, j;
-	double lik,eps;
+	double eps;
 	gsl_matrix *H;
 	
 	
