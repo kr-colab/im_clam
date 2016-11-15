@@ -731,7 +731,8 @@ gsl_matrix *hessian(double *mle, void *p){
 }
 
 gsl_matrix *getFisherInfoMatrix(double *mle, void *p){
-	gsl_matrix *H, *I;
+	gsl_matrix *H;
+	gsl_matrix *I;
 	gsl_permutation *p = gsl_permutation_alloc(5);
 	int s;
 	
