@@ -713,3 +713,21 @@ double hessianMatrix_element(double lik, double *mle, int i, int j, double hi, d
 	return output;
 }
 
+gsl_matrix *hessian(double *mle, void *p){
+	int i, j;
+	double lik,esp;
+	gsl_matrix *H;
+	
+	
+	H = gsl_matrix_alloc(5,5);
+	lik = calcLikNLOpt(5,mle,NULL,p);
+	eps = 0.001;
+	for(i=0;i<5;i++){
+		for (j=i;j<5;j++){
+			gsl_matrix_set(H,i,j,hessianMatrix_element(lik, *mle, i, j, eps, eps, p));
+		}
+	}
+	
+	
+	return(H);
+}
