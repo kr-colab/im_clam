@@ -727,7 +727,18 @@ gsl_matrix *hessian(double *mle, void *p){
 			gsl_matrix_set(H,i,j,hessianMatrix_element(lik, mle, i, j, eps, eps, p));
 		}
 	}
-	
-	
 	return(H);
+}
+
+gsl_matrix *getFisherInfoMatrix(double *mle, void *p){
+	gsl_matrix *H, *I;
+	gsl_permutation *p = gsl_permutation_alloc(5);
+	int s;
+	
+	H = hessian(mle,p);
+	I = gsl_matrix_alloc(5,5);
+	gsl_matrix_scale(H,-1.0);
+	gsl_linalg_LU_decomp (H, p, &s);    
+	gsl_linalg_LU_invert (H, p, I);
+	return(I);
 }
