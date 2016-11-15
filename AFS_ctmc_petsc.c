@@ -6,6 +6,7 @@
 #include "cs.h"
 #include "AFS_ctmc.h"
 #include "nlopt.h"
+#include <gsl/gsl_linalg.h>
 
 //Functions for jointly computing CTMC transitions and embedded chain
 
