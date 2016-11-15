@@ -71,6 +71,7 @@ int main(int argc, char **argv){
 	double snpNumber, pi_est, p, N0;
 	double u=1e-8;
 	double genPerYear=20;
+	gsl_matrix *fi;
 	FILE *infile;
 	
 	///////////////////
@@ -351,6 +352,32 @@ int main(int argc, char **argv){
 		}
 		
 		
+		break;
+		case 5:
+		if(rank==0){
+			printf("\nUncertainty estimation (via Fisher Information) run mode\n\n");
+			printf("MLE parameters:\n");
+			for(i=0;i<5;i++)printf("%f ",mle[i]);
+		}
+		lik = calcLikNLOpt(5,mle,NULL,currentParams);
+		fi = getFisherInfoMatrix(mle, lik, currentParams);
+		if(rank==0){
+			printf("\nlikelihood: %lf\n",-lik);
+			printf("Composite Likelihood estimates of IM params (scaled by 1/theta_pop1):\n");
+			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
+			for(i=0;i<5;i++)printf("%f\t",(float)mle[i]);
+			printf("\n\nComposite Likelihood estimates of IM params (unscaled):\n");
+			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
+			for(i=0;i<4;i++)printf("%f\t",(float)mle[i]*N0);
+			printf("%f\t",(float)mle[i] * N0 * 4.0/ (float)genPerYear);
+			printf("Uncertainty estimates of IM params (scaled by 1/theta_pop1):\n");
+			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
+			for(i=0;i<5;i++)printf("%f\t",(float) sqrt(gsl_matrix_get(fi,i,i)));
+			printf("\n\nUncertainty estimates of IM params (unscaled):\n");
+			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
+			for(i=0;i<4;i++)printf("%f\t",(float) sqrt(gsl_matrix_get(fi,i,i))*N0);
+			printf("%f\t",(float)sqrt(gsl_matrix_get(fi,i,i)) * N0 * 4.0/ (float)genPerYear);
+		}
 		break;
 	}
 		
