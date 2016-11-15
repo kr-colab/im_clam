@@ -43,6 +43,7 @@ PetscBool vbse = PETSC_FALSE;
 static char help[] = "im_clam\n\
 	Example: mpiexec -n <np> ./im_clam -s <stateSpace file> -m <mats file> -d <data file> \n\n\toptions:\n\
 	\t-exp expected value mode (requires -x flag too)\n\
+	\t-FIM uncertainty estimation mode (requires -x flag too)\n\
 	\t-mo multiple optimizations from different start points\n\
 	\t-global multi-level optimization (MLSL algo.)\n\
 	\t-x <theta_2, theta_A, mig12, mig21, t_div> parameter starting values\n\
@@ -134,6 +135,7 @@ int main(int argc, char **argv){
 	
 	PetscOptionsHasName(NULL,"-mo",&flg); if(flg) runMode=3;
 	PetscOptionsHasName(NULL,"-global",&flg); if(flg) runMode=4;
+	PetscOptionsHasName(NULL,"-FIM",&flg); if(flg) runMode=5;
 	
 	
 	//import state space
