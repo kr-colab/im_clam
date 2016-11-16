@@ -135,7 +135,7 @@ as it says, the proper call is to use mpiexec to then run `im_clam`.
 ---
 
 #### Parameter Estimation
-There are a few options for use with the program. The first is the run mode. When no options are provided `im_clam` will do parameter estimation using the state space file, topology matrix, and data file specified. Parameter optimization using the low-strage BFGS algorithm. All optimization uses the `nlopt` library and you can read about the optimization algorithms [here](http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms). Here is an example
+There are a few options for use with the program. The first is the run mode. When no options are provided `im_clam` will do parameter estimation using the state space file, topology matrix, and data file specified. Parameter optimization using the low-storage BFGS algorithm. All optimization uses the `nlopt` library and you can read about the optimization algorithms [here](http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms). Here is an example
 
 ```
 $ $PETSC_DIR/arch-linux2-c-debug/bin/mpiexec -n 2 ./im_clam -s stateSpaceFiles/testSS_33 -m stateSpaceFiles/testSS_33_mats -d exampleInput_33 -u 0.00001
