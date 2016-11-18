@@ -721,7 +721,7 @@ gsl_matrix *hessian(double *mle, double lik, void *p){
 	
 	
 	H = gsl_matrix_alloc(5,5);
-	eps = 0.000001;
+	eps = 0.01;
 	for(i=0;i<5;i++){
 		for (j=i;j<5;j++){
 			gsl_matrix_set(H,i,j,hessianMatrix_element(lik, mle, i, j, eps, eps, p));
@@ -738,11 +738,11 @@ gsl_matrix *getFisherInfoMatrix(double *mle, double lik, void *p){
 	int s;
 	
 	H = hessian(mle,lik,p);
-	gsl_matrix_prettyPrint(H);printf("\n");
+	//gsl_matrix_prettyPrint(H);printf("\n");
 	fi = gsl_matrix_alloc(5,5);
-	gsl_matrix_scale(H,-1.0);
+	//gsl_matrix_scale(H,-1.0);
 	gsl_linalg_LU_decomp (H, perm, &s);    
 	gsl_linalg_LU_invert (H, perm, fi);
-	gsl_matrix_prettyPrint(fi);printf("\n");
+	//gsl_matrix_prettyPrint(fi);printf("\n");
 	return(fi);
 }

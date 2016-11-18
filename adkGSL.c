@@ -58,7 +58,7 @@ void gsl_matrix_prettyPrint(gsl_matrix *m){
 	int i, j;
 	for(i=0;i<m->size1;i++){
 		for(j=0;j<m->size2;j++){
-			printf("%.2f ",gsl_matrix_get(m,i,j));
+			printf("%.6f ",gsl_matrix_get(m,i,j));
 		}
 		printf("\n");
 	}
