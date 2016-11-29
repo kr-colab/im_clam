@@ -27,6 +27,7 @@ void fillPetscTransMats(afsStateSpace *S, double *topol, int *moveType, int *nzC
 			c1r[i] = 0.0;
 		else
 			c1r[i] = S->states[i]->aCounts[1] * (S->states[i]->aCounts[1]-1)  / theta2;
+	
 		m0r[i] = S->states[i]->aCounts[0] * mig1 ;
 		m1r[i] = S->states[i]->aCounts[1] * mig2 ;
 		totR[i] = c0r[i] + c1r[i] + m0r[i] + m1r[i];
@@ -497,6 +498,306 @@ void calcLogAFS_IM(void * p){
 	
 }
 
+
+//calcLogAFS_IM_allPETSC -- returns the expects log AFS from an IM model; only uses PETSC
+void calcLogAFS_IM_allPETSC(void * p){
+	struct clam_lik_params * params = (struct clam_lik_params *) p;
+ 	int i,j, N = params->stateSpace->nstates;
+  	cs *spMat, *mt, *ident, *eye, *tmpMat ;
+  	double timeV, sum, thetaA, theta2, mig1, mig2;
+  	int Na;
+  	gsl_vector *tmpStates;
+ 	css *S ;
+	csn *NN ;
+	int n,Ntmp ;
+	double *xx;
+ 	PetscInt        iStart,iEnd, *idx;
+	const PetscInt *idx2;
+	PetscScalar    *tmpArray;
+	const PetscScalar *tmpArrayC;
+	PetscErrorCode ierr;
+	MFNConvergedReason reason;
+	
+ 	//initialize some vectors
+ 	gsl_vector_set_zero(params->rates);
+	MatZeroEntries(params->C);
+	MatZeroEntries(params->C2);
+	MatZeroEntries(params->D);
+ 	tmpStates = gsl_vector_alloc(N);
+	Ntmp=N;
+	Na=params->Na;
+ 	//For straight MLE the paramVector takes the form [N2,NA,m1,m2,t]
+ 	theta2 = gsl_vector_get(params->paramVector,0);
+ 	thetaA = gsl_vector_get(params->paramVector,1);
+ 	mig1 = gsl_vector_get(params->paramVector,2);
+ 	mig2 = gsl_vector_get(params->paramVector,3);
+ 	timeV = gsl_vector_get(params->paramVector,4);
+// 	printf("params-> %f %f %f %f %f\n",theta2,thetaA,mig1,mig2,timeV);
+// 	printf("nnz %d nnzA%d \n",params->nnz,params->nnzA);
+ 
+	//fill transMat
+	fillPetscTransMats(params->stateSpace, params->top, params->move, &params->nnz,
+		params->dim1, params->dim2, 1, theta2, mig1, mig2, &params->D, &params->C, params->rates);
+ 	
+	//using CSparse
+	// S = (I-P)^-1
+	//add negative ident
+	ident = cs_spalloc(N,N,N,1,1);
+	for(i=0;i<N;i++) cs_entry(ident,i,i,1);
+	eye = cs_compress(ident);
+	spMat = cs_add(eye,tmpMat,1.0,-1.0);
+	//cs_print_adk(spMat);
+	mt = cs_transpose(spMat,1);
+	//cs_print_adk(mt);
+	
+
+	n = mt->n ;
+	S = cs_sqr (0, mt, 0) ;              /* ordering and symbolic analysis */
+	NN = cs_lu (mt, S, 1e-12) ;                 /* numeric LU factorization */
+	xx = cs_malloc (n, sizeof (double)) ;    /* get workspace */
+	
+	MatGetOwnershipRange(params->denseMat1,&iStart,&iEnd);
+	PetscMalloc1(N,&idx);
+	for(j=0;j<N;j++) idx[j]=j;
+
+	////Compute Entire Inverse Mat
+	for(j=iStart;j<iEnd;j++){
+	//create unit array for solve
+		for(i=0; i<N; i++)params->b[i] = 0.0;
+		params->b[j]=1.0;
+		//factor outside loop leads to ~40x speedup
+		cs_ipvec (NN->pinv, params->b, xx, n) ;       /* x = b(p) */
+		cs_lsolve (NN->L, xx) ;               /* x = L\x */
+		cs_usolve (NN->U, xx) ;               /* x = U\x */
+		cs_ipvec (S->q, xx, params->b, n) ;          /* b(q) = x */
+	//	if(!rank)printf("row %d\n",j);
+		MatSetValues(params->denseMat1,1,&j,N,idx,params->b,INSERT_VALUES);
+	}
+	MatAssemblyBegin(params->denseMat1,MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(params->denseMat1,MAT_FINAL_ASSEMBLY);
+	//temporary clean up
+	free(xx);
+	cs_spfree(spMat);
+	cs_spfree(mt);
+	cs_spfree(ident);
+	cs_spfree(eye);
+	cs_spfree(tmpMat);
+	cs_nfree(NN);
+	cs_sfree(S);
+	PetscFree(idx);
+
+//	MatView(params->denseMat1,PETSC_VIEWER_STDOUT_WORLD);
+
+	//broadcast the invMat[0,] as vector to each processor
+	if(params->rank==0){
+		MatGetRow(params->denseMat1,0,&N,&idx2,&tmpArrayC);
+		for (j = 0; j < N; j++) params->b[j] = tmpArrayC[j];
+		MatRestoreRow(params->denseMat1,0,&Ntmp,&idx2,&tmpArrayC);	//have to use Ntmp here as MatRestoreRow does something funky
+	}
+	MPI_Bcast(params->b,N,MPI_DOUBLE,0,PETSC_COMM_WORLD);
+	
+
+	//Get Island Time 0-INF Unnormal
+	gsl_matrix_set_zero(params->expAFS);
+	fillExpectedAFS_unnorm(params->stateSpace, params->b,params->rates,params->expAFS);
+	// printf("////////////////////Island Time 0 - INF unnormalized\n");
+	// for(i=0;i< (params->n1+1) ;i++){
+	// 	for(j=0;j< (params->n2+1);j++){
+	// 		printf("%.5f ",gsl_matrix_get(params->expAFS,i,j));
+	// 	}
+	// 	printf("\n");
+	// }
+	
+	//Matrix Exponentiation to get state vector at time t
+	//SLEPC Stuff ahead!
+	/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+	Create the solver and set various options
+	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+
+	/* 
+	Set operator matrix, the function to compute, and other options
+	*/
+	//transpose
+	MatTranspose(params->C,MAT_REUSE_MATRIX,&params->C);
+	ierr = MFNSetOperator(params->mfn,params->C);CHKERRV(ierr);
+	/*
+	Set solver parameters at runtime
+	*/
+	
+	ierr = MFNSetScaleFactor(params->mfn,timeV); CHKERRV(ierr);
+	ierr = MFNSetFromOptions(params->mfn);CHKERRV(ierr);
+
+	/* set v = e_1 */
+	ierr = MatGetVecs(params->C,PETSC_NULL,&params->y);CHKERRV(ierr);
+	ierr = MatGetVecs(params->C,&params->v, PETSC_NULL);CHKERRV(ierr);
+	ierr = VecSetValue(params->v,0,1.0,INSERT_VALUES);CHKERRV(ierr);
+
+	ierr = VecAssemblyBegin(params->v);CHKERRV(ierr);
+	ierr = VecAssemblyEnd(params->v);CHKERRV(ierr);
+	ierr = MFNSolve(params->mfn,params->v,params->y);CHKERRV(ierr);
+	ierr = MFNGetConvergedReason(params->mfn,&reason);CHKERRV(ierr);
+	if (reason!=MFN_CONVERGED_TOL) ierr = 1; CHKERRV(ierr);
+
+	//retranspose for later use
+	MatTranspose(params->C,MAT_REUSE_MATRIX,&params->C);
+
+	//state vector at time t stored in y
+	//scatter y and store in expoArray
+	VecScatterCreateToAll(params->y,&params->ctx,&params->v_seq);
+	VecScatterBegin(params->ctx,params->y,params->v_seq,INSERT_VALUES,SCATTER_FORWARD);
+	VecScatterEnd(params->ctx,params->y,params->v_seq,INSERT_VALUES,SCATTER_FORWARD);
+	VecGetArray(params->v_seq,&tmpArray);
+	for (j = 0; j < N; j++){
+		params->expoArray[j] = tmpArray[j];
+		//printf("%.5f\n",expoArray[j]);	
+	} 
+
+	VecRestoreArray(params->v_seq,&tmpArray);
+	VecScatterDestroy(&params->ctx);
+	VecDestroy(&params->v_seq);
+	VecDuplicate(params->y,&params->x);
+	
+	//VecView(y, PETSC_VIEWER_STDOUT_WORLD);
+	MatMultTranspose(params->denseMat1,params->y,params->x);
+	VecScatterCreateToAll(params->x,&params->ctx,&params->v_seq);
+	VecScatterBegin(params->ctx,params->x,params->v_seq,INSERT_VALUES,SCATTER_FORWARD);
+	VecScatterEnd(params->ctx,params->x,params->v_seq,INSERT_VALUES,SCATTER_FORWARD);
+	VecGetArray(params->v_seq,&tmpArray);
+	for (j = 0; j < N; j++){
+		params->b[j] = tmpArray[j];
+		//printf("rank %d expoArray[%d]:%.5f\n",rank,j,expoArray[j]);	
+		//printf("rank %d b[%d]:%.5f\n",rank,j,b[j]);	
+	} 
+
+	VecRestoreArray(params->v_seq,&tmpArray);
+	VecScatterDestroy(&params->ctx);
+	VecDestroy(&params->v_seq);
+
+
+	fillExpectedAFS_unnorm(params->stateSpace, params->b,params->rates,params->expAFS2);
+	//now subtract older AFS (t_t - t_INF) from total AFS (t_0 - t_INF)
+	/////////////////
+	///////
+
+	gsl_matrix_sub(params->expAFS,params->expAFS2);
+	
+	//////////////////////
+	//Final phase, collapse popns, reset rates
+	//now collapse populations
+	//state vector at time t stored in st[] for largerStateSpace; use reverseMap
+	for(i=0;i<N;i++)params->st[i]=0.0;
+	for(i=0;i<N;i++){params->st[params->map[i]]+=params->expoArray[i];
+	//	printf("expoArray[%d]:%f\n",i,expoArray[i]);
+	}
+	for(i=0; i<params->reducedStateSpace->nstates; i++){
+		VecSetValue(params->ancStateVec,i,params->st[params->reverseMap[i]],INSERT_VALUES );
+	}
+
+	//Re-Fill trans mats for Ancestral Params
+
+	params->nnzA = coalMarkovChainTopologyMatrix_sparse(params->reducedStateSpace,params->topA,params->moveA, params->dim1A, params->dim2A);
+	
+	tmpMat=fillPetscCsparseTransMats(params->reducedStateSpace, params->topA, params->moveA, &params->nnzA,
+		params->dim1A, params->dim2A, thetaA, 0, 0, 0, &params->C2, params->rates);
+	//////////////////////
+	//
+	// S = (I-P)^-1
+	//
+	/////////
+	//////
+	//add negative ident
+	ident = cs_spalloc(Na,Na,Na,1,1);
+	for(i=0;i<Na;i++) cs_entry(ident,i,i,1);	
+	eye = cs_compress(ident);	
+	spMat = cs_add(eye,tmpMat,1.0,-1.0);
+	
+	//cs_print_adk(spMat);
+	mt = cs_transpose(spMat,1);
+	//VecView(y,PETSC_VIEWER_STDOUT_WORLD);
+	n = mt->n ;
+	S = cs_sqr (0, mt, 0) ;              /* ordering and symbolic analysis */
+	NN = cs_lu (mt, S, 1e-12) ;                 /* numeric LU factorization */
+	xx = cs_malloc (n, sizeof (double)) ;    /* get workspace */
+	MatGetOwnershipRange(params->denseMat2,&iStart,&iEnd);
+//	printf("here\n");
+	PetscFree(idx);
+	PetscMalloc1(Na,&idx);
+	for(j=0;j<Na;j++) idx[j]=j;
+	////Compute Entire Inverse Mat
+	for(j=iStart;j<iEnd;j++){
+	//create unit array for solve
+		for(i=0; i<Na; i++)params->b[i] = 0.0;
+		params->b[j]=1.0;
+		//factor outside loop leads to ~40x speedup
+		cs_ipvec (NN->pinv, params->b, xx, n) ;       /* x = b(p) */
+		cs_lsolve (NN->L, xx) ;               /* x = L\x */
+		cs_usolve (NN->U, xx) ;               /* x = U\x */
+		cs_ipvec (S->q, xx, params->b, n) ;          /* b(q) = x */
+	//	if(!rank)printf("row %d\n",j);
+		MatSetValues(params->denseMat2,1,&j,Na,idx,params->b,INSERT_VALUES);
+	}
+	MatAssemblyBegin(params->denseMat2,MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(params->denseMat2,MAT_FINAL_ASSEMBLY);
+	free(xx);
+	
+	MatMultTranspose(params->denseMat2,params->ancStateVec,params->ancResVec);
+	VecScatterCreateToAll(params->ancResVec,&params->ctx,&params->v_seq);
+	VecScatterBegin(params->ctx,params->ancResVec,params->v_seq,INSERT_VALUES,SCATTER_FORWARD);
+	VecScatterEnd(params->ctx,params->ancResVec,params->v_seq,INSERT_VALUES,SCATTER_FORWARD);
+
+
+	VecGetArray(params->v_seq,&tmpArray);
+	for (j = 0; j < Na; j++){
+		params->expoArray[j] = tmpArray[j];
+		//printf("%.5f\n",expoArray[j]);	
+	}
+
+	VecRestoreArray(params->v_seq,&tmpArray);
+	VecScatterDestroy(&params->ctx);
+	VecDestroy(&params->v_seq);
+
+	//get contribution starting at st
+	gsl_matrix_set_zero(params->expAFS2);
+	fillExpectedAFS_unnorm(params->reducedStateSpace, params->expoArray,params->rates,params->expAFS2);
+
+
+	// printf("////////////////////--Ancestral bit\n");
+	// for(i=0;i< (n1+1) ;i++){
+	// 	for(j=0;j< (n2+1);j++){
+	// 		printf("%.5f ",gsl_matrix_get(expAFS2,i,j));
+	// 	}
+	// 	printf("\n");
+	// }
+
+	//if(params->rank==0)printf("////////////////////normalized IM:\n");
+			
+	gsl_matrix_add(params->expAFS,params->expAFS2);
+	sum = matrixSumDouble(params->expAFS);
+	gsl_matrix_scale(params->expAFS, 1.0 / sum);
+	// for(i=0;i< (params->n1+1) ;i++){
+	// 		for(j=0;j< (params->n2+1);j++){
+	// 			if(params->rank==0)printf("%.5f ",gsl_matrix_get(params->expAFS,i,j));
+	// 		}
+	// 		if(params->rank==0)printf("\n");
+	// 	}
+	// 	
+	
+	//clean up
+	PetscFree(idx);
+	VecDestroy(&params->y);
+	VecDestroy(&params->x);
+	VecDestroy(&params->v);
+	PetscFree(tmpArray);
+	cs_spfree(spMat);
+	cs_spfree(mt);
+	cs_spfree(ident);
+	cs_spfree(eye);
+	cs_spfree(tmpMat);
+	gsl_vector_free(tmpStates);
+	cs_nfree(NN);
+	cs_sfree(S);
+	
+}
 double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p){
 	int i,j;
 	struct clam_lik_params * params = (struct clam_lik_params *) p;

@@ -68,6 +68,7 @@ int main(int argc, char **argv){
 	PetscErrorCode ierr;
 	PetscMPIInt    rank,size;
 	PetscBool      flg,obsFlag;
+	Vec tmpVec;
 	int dim=5;
 	double snpNumber, pi_est, p, N0;
 	double u=1e-8;
@@ -75,6 +76,7 @@ int main(int argc, char **argv){
 	gsl_matrix *fi;
 	FILE *infile;
 	int testInt=0;
+	PetscScalar one = 1.0;
 
 	///////////////////
 	/////	PETSC / Slepc library version of this code
@@ -232,6 +234,24 @@ int main(int argc, char **argv){
 	ierr = MatSetUp(currentParams->C2);CHKERRQ(ierr);
 
 	ierr = MatCreateDense(PETSC_COMM_WORLD,PETSC_DECIDE, PETSC_DECIDE, currentParams->Na, currentParams->Na, NULL, &currentParams->denseMat2);CHKERRQ(ierr);
+	
+	//DTMC with PETSC  /////////////
+	ierr = MatCreate(PETSC_COMM_WORLD,&currentParams->D);CHKERRQ(ierr);
+	ierr = MatSetSizes(currentParams->D, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
+	ierr = MatSetFromOptions(currentParams->D);CHKERRQ(ierr);
+	ierr = MatSetUp(currentParams->D);CHKERRQ(ierr);
+	
+	ierr = MatCreate(PETSC_COMM_WORLD,&currentParams->ident);CHKERRQ(ierr);
+	ierr = MatSetSizes(currentParams->ident, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
+	ierr = MatSetFromOptions(currentParams->ident);CHKERRQ(ierr);
+	ierr = MatSetUp(currentParams->ident);CHKERRQ(ierr);
+	MatShift(currentParams->ident,one);
+	/* Assemble the matrix */
+  	MatAssemblyBegin(currentParams->ident,MAT_FINAL_ASSEMBLY);
+  	MatAssemblyEnd(currentParams->ident,MAT_FINAL_ASSEMBLY);
+	
+	//////////////////////////////
+	
 	// setup done! ///////////////
 	////////////////////////////////////
 
