@@ -321,7 +321,7 @@ int main(int argc, char **argv){
 		for(i=0;i<5;i++){
 			gsl_vector_set(currentParams->paramVector,i,mle[i]);
 		}
-		calcLogAFS_IM(currentParams);
+		calcLogAFS_IM_allPETSC(currentParams);
 		currentParams->nnz = nnz;
 		if(rank == 0){
 			printf("Expected AFS:\n");
