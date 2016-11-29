@@ -251,6 +251,12 @@ int main(int argc, char **argv){
   	MatAssemblyEnd(currentParams->ident,MAT_FINAL_ASSEMBLY);
 	MatShift(currentParams->ident,one);
 	
+	KSPCreate(PETSC_COMM_WORLD,&currentParams->ksp);
+	KSPSetFromOptions(currentParams->ksp);
+	VecCreate(PETSC_COMM_WORLD,&currentParams->xInv);
+	VecSetSizes(currentParams->xInv,PETSC_DECIDE,N);
+	VecSetFromOptions(currentParams->xInv);
+	VecDuplicate(currentParams->xInv,&currentParams->bInv);
 	//////////////////////////////
 	
 	// setup done! ///////////////

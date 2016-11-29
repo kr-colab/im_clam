@@ -511,9 +511,13 @@ void calcLogAFS_IM_allPETSC(void * p){
 	csn *NN ;
 	int n,Ntmp ;
 	double *xx;
- 	PetscInt        iStart,iEnd, *idx;
+	Vec            x,b,u;  /* approx solution, RHS, exact solution */
+ 	PetscInt        iStart,iEnd, *idx,its;
 	const PetscInt *idx2;
 	PetscScalar    *tmpArray;
+	PetscScalar negOne = -1.0;
+	PetscScalar one = 1.0;
+	PetscScalar hold[N];
 	const PetscScalar *tmpArrayC;
 	PetscErrorCode ierr;
 	MFNConvergedReason reason;
@@ -541,20 +545,14 @@ void calcLogAFS_IM_allPETSC(void * p){
  	
 	//using CSparse
 	// S = (I-P)^-1
-	//add negative ident
-	ident = cs_spalloc(N,N,N,1,1);
-	for(i=0;i<N;i++) cs_entry(ident,i,i,1);
-	eye = cs_compress(ident);
-	spMat = cs_add(eye,tmpMat,1.0,-1.0);
-	//cs_print_adk(spMat);
-	mt = cs_transpose(spMat,1);
-	//cs_print_adk(mt);
+	//subtract DTMC mat from identity
+	MatAXPY(params->ident,negOne,params->D,DIFFERENT_NONZERO_PATTERN);
+	MatTranspose(params->D,MAT_REUSE_MATRIX,&params->D);
+	VecZeroEntries(params->xInv);
 	
+	KSPSetOperators(params->ksp,params->D,params->D);
 
-	n = mt->n ;
-	S = cs_sqr (0, mt, 0) ;              /* ordering and symbolic analysis */
-	NN = cs_lu (mt, S, 1e-12) ;                 /* numeric LU factorization */
-	xx = cs_malloc (n, sizeof (double)) ;    /* get workspace */
+
 	
 	MatGetOwnershipRange(params->denseMat1,&iStart,&iEnd);
 	PetscMalloc1(N,&idx);
@@ -563,27 +561,25 @@ void calcLogAFS_IM_allPETSC(void * p){
 	////Compute Entire Inverse Mat
 	for(j=iStart;j<iEnd;j++){
 	//create unit array for solve
-		for(i=0; i<N; i++)params->b[i] = 0.0;
-		params->b[j]=1.0;
-		//factor outside loop leads to ~40x speedup
-		cs_ipvec (NN->pinv, params->b, xx, n) ;       /* x = b(p) */
-		cs_lsolve (NN->L, xx) ;               /* x = L\x */
-		cs_usolve (NN->U, xx) ;               /* x = U\x */
-		cs_ipvec (S->q, xx, params->b, n) ;          /* b(q) = x */
-	//	if(!rank)printf("row %d\n",j);
-		MatSetValues(params->denseMat1,1,&j,N,idx,params->b,INSERT_VALUES);
+		VecZeroEntries(params->bInv);
+		VecSetValue(params->bInv,j,one,INSERT_VALUES);
+		VecAssemblyBegin(params->bInv);
+		VecAssemblyEnd(params->bInv);
+		KSPSolve(params->ksp,params->b,params->x);
+		VecGetValues(params->x,N,idx,hold);
+		MatSetValues(params->denseMat1,1,&j,N,idx,hold,INSERT_VALUES);
 	}
 	MatAssemblyBegin(params->denseMat1,MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(params->denseMat1,MAT_FINAL_ASSEMBLY);
 	//temporary clean up
-	free(xx);
-	cs_spfree(spMat);
-	cs_spfree(mt);
-	cs_spfree(ident);
-	cs_spfree(eye);
-	cs_spfree(tmpMat);
-	cs_nfree(NN);
-	cs_sfree(S);
+//	free(xx);
+//	cs_spfree(spMat);
+//	cs_spfree(mt);
+//	cs_spfree(ident);
+//	cs_spfree(eye);
+//	cs_spfree(tmpMat);
+//	cs_nfree(NN);
+//	cs_sfree(S);
 	PetscFree(idx);
 
 //	MatView(params->denseMat1,PETSC_VIEWER_STDOUT_WORLD);
@@ -812,7 +808,8 @@ double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p)
 	for(i = 0;i<5;i++) gsl_vector_set(params->paramVector, i, x[i]);
 	
 	//fill in the expAFS table
-	calcLogAFS_IM(p);
+	//calcLogAFS_IM(p);
+	calcLogAFS_IM_allPETSC(p);
 	params->nnz = localNNZ;
 	
 	//compute lik

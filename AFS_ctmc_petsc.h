@@ -18,6 +18,7 @@ struct cs_di_sparse * fillPetscCsparseTransMats(afsStateSpace *S, double *topol,
 	int *dim1, int *dim2, double theta1, double theta2, double mig1, double mig2, Mat *CTMC, gsl_vector *rates);
 	
 void calcLogAFS_IM(void * p);
+void calcLogAFS_IM_allPETSC(void * p);
 double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p);
 double calcLikNLOpt_gradients(unsigned n, const double *point, double *gradients, void *p);
 
