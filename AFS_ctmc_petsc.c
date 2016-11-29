@@ -550,7 +550,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	MatTranspose(params->D,MAT_REUSE_MATRIX,&params->D);
 	
 	
-	KSPCreate(PETSC_COMM_WORLD,&currentParams->ksp);
+	KSPCreate(PETSC_COMM_WORLD,&params->ksp);
 	KSPSetFromOptions(currentParams->ksp);
 	KSPSetOperators(params->ksp,params->D,params->D);
 
@@ -568,8 +568,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 		VecSetValue(params->bInv,j,one,INSERT_VALUES);
 		VecAssemblyBegin(params->bInv);
 		VecAssemblyEnd(params->bInv);
-		VecAssemblyBegin(params->xInv);
-		VecAssemblyEnd(params->xInv);
+
 		KSPSolve(params->ksp,params->bInv,params->xInv);
 		VecGetValues(params->x,N,idx,hold);
 		MatSetValues(params->denseMat1,1,&j,N,idx,hold,INSERT_VALUES);
