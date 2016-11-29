@@ -245,10 +245,11 @@ int main(int argc, char **argv){
 	ierr = MatSetSizes(currentParams->ident, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
 	ierr = MatSetFromOptions(currentParams->ident);CHKERRQ(ierr);
 	ierr = MatSetUp(currentParams->ident);CHKERRQ(ierr);
-	MatShift(currentParams->ident,one);
+	
 	/* Assemble the matrix */
   	MatAssemblyBegin(currentParams->ident,MAT_FINAL_ASSEMBLY);
   	MatAssemblyEnd(currentParams->ident,MAT_FINAL_ASSEMBLY);
+	MatShift(currentParams->ident,one);
 	
 	//////////////////////////////
 	
