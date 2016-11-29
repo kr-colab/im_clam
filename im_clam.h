@@ -20,7 +20,7 @@ typedef struct clam_lik_params{
 	int Na,fEvals;
 	double *expoArray;
 	cs_di *spMat, *mt, *eye, *tmpMat, *tmpMat2;
-	Vec  x_0, *x, u,bP, u2, bP2, v, y, v_seq, *x2, ancStateVec, ancResVec;
+	Vec  x_0, x, u,bP, u2, bP2, v, y, v_seq, *x2, ancStateVec, ancResVec;
 	Mat            ident,C, C2, C_transpose, D, D_copy, F, denseMat1, denseMat2, denseMat3;
 	VecScatter	ctx;
 	MFN                mfn;

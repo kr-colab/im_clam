@@ -74,7 +74,8 @@ int main(int argc, char **argv){
 	double genPerYear=20;
 	gsl_matrix *fi;
 	FILE *infile;
-	
+	int testInt=0;
+
 	///////////////////
 	/////	PETSC / Slepc library version of this code
 	SlepcInitialize(&argc,&argv,(char*)0,help);
@@ -150,7 +151,7 @@ int main(int argc, char **argv){
 		fprintf(stderr,"Error opening mats file! ARRRRR!!!!\n");
 		exit(1);
 	}
-	fscanf(infile,"nnz: %d", &nnz);
+	testInt=fscanf(infile,"nnz: %d", &nnz);
 	fclose(infile);
 	//got nnz, time for allocs
 	
@@ -239,7 +240,9 @@ int main(int argc, char **argv){
 	mcMatsImportFromFile(filename2, &nnz, currentParams->top, currentParams->move, currentParams->dim1, currentParams->dim2);
 	currentParams->nnz = nnz;
 		
-	
+
+	//init snpNumber to avoid compiler warning
+	snpNumber=0;	
 	if(runMode != 2){
 		//alloc data matrix and import data; estimate pi and N1
 		currentParams->obsData = gsl_matrix_alloc(n1+1,n2+1);
@@ -410,6 +413,7 @@ int main(int argc, char **argv){
 	VecDestroy(&currentParams->ancResVec);
 	gsl_rng_free (r);
 	
+	afsStateSpaceFree(currentParams->reducedStateSpace);	
 	time2=clock();
 	if(rank==0)printf("total run time:%f secs\n Liklihood Func. Evals: %d\n",(double) (time2-time1)/CLOCKS_PER_SEC,currentParams->fEvals);
 	ierr = PetscFinalize();
@@ -427,7 +431,6 @@ void import2DSFSData(const char *fileName, gsl_matrix *obsData){
 		fprintf(stderr,"Error opening data file! ARRRRR!!!!\n");
 		exit(1);
 	}
-	
 	gsl_matrix_fscanf(infile,obsData);
 	fclose(infile);
 }

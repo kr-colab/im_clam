@@ -211,7 +211,9 @@ void calcLogAFS_IM(void * p){
 	int n,Ntmp ;
 	double *xx;
  	PetscInt        iStart,iEnd, *idx;
+	const PetscInt *idx2;
 	PetscScalar    *tmpArray;
+	const PetscScalar *tmpArrayC;
 	PetscErrorCode ierr;
 	MFNConvergedReason reason;
 	
@@ -286,9 +288,9 @@ void calcLogAFS_IM(void * p){
 
 	//broadcast the invMat[0,] as vector to each processor
 	if(params->rank==0){
-		MatGetRow(params->denseMat1,0,&N,&idx,&tmpArray);
-		for (j = 0; j < N; j++) params->b[j] = tmpArray[j];
-		MatRestoreRow(params->denseMat1,0,&Ntmp,&idx,&tmpArray);	//have to use Ntmp here as MatRestoreRow does something funky
+		MatGetRow(params->denseMat1,0,&N,&idx2,&tmpArrayC);
+		for (j = 0; j < N; j++) params->b[j] = tmpArrayC[j];
+		MatRestoreRow(params->denseMat1,0,&Ntmp,&idx2,&tmpArrayC);	//have to use Ntmp here as MatRestoreRow does something funky
 	}
 	MPI_Bcast(params->b,N,MPI_DOUBLE,0,PETSC_COMM_WORLD);
 	
@@ -532,7 +534,7 @@ double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p)
 
 double calcLikNLOpt_gradients(unsigned n, const double *point, double *gradients, void *p){
 	int i,j;
-	struct clam_lik_params * params = (struct clam_lik_params *) p;
+	//struct clam_lik_params * params = (struct clam_lik_params *) p;
 	//double localNNZ = params->nnz;
 	double output = 666.0; 
 	double lik=0.0;
@@ -567,7 +569,7 @@ double calcLikNLOpt_gradients(unsigned n, const double *point, double *gradients
 // nlOpt library
 
 void maximizeLikNLOpt(double *lik, void *p, double *mle){
-	struct clam_lik_params * params = (struct clam_lik_params *) p;
+	//struct clam_lik_params * params = (struct clam_lik_params *) p;
 	int np = 5;
 	int err;
 	//double x[5] = {1.0,1.0,1.0,1.0,1.5};
@@ -598,7 +600,7 @@ void maximizeLikNLOpt(double *lik, void *p, double *mle){
 //maximizeLikNLOpt_twoStage-- begins with coarse global, then goes local
 
 void maximizeLikNLOpt_twoStage(double *lik, void *p, double *mle){
-	struct clam_lik_params * params = (struct clam_lik_params *) p;
+	//struct clam_lik_params * params = (struct clam_lik_params *) p;
 	int np = 5;
 	int err;
 	//double x[5] = {1.0,1.0,1.0,1.0,1.5};
@@ -632,7 +634,6 @@ void maximizeLikNLOpt_twoStage(double *lik, void *p, double *mle){
 //maximizeLikNLOpt_MLSL-- multi-level restarts
 
 void maximizeLikNLOpt_MLSL(double *lik, void *p, double *mle){
-	struct clam_lik_params * params = (struct clam_lik_params *) p;
 	int np = 5;
 	int err;
 	//double x[5] = {1.0,1.0,1.0,1.0,1.5};
@@ -674,8 +675,8 @@ void maximizeLikNLOpt_MLSL(double *lik, void *p, double *mle){
 ///////////////// Hessian stuff ///////////////////
 
 double hessianMatrix_element(double lik, double *mle, int i, int j, double hi, double hj, void *p){
-	struct clam_lik_params * params = (struct clam_lik_params *) p;
-	double Pi0, Pj0,output, fp,fm,fpp,fpm,fmp,fmm;
+	//struct clam_lik_params * params = (struct clam_lik_params *) p;
+	double Pi0, Pj0,output,fpp,fpm,fmp,fmm;
 	
 	Pi0 = mle[i]; Pj0 = mle[j];
 	

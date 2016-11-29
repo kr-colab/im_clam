@@ -454,6 +454,7 @@ void afsStateSpaceMapAndReducePopn(afsStateSpace *S, int *map, afsStateSpace *re
 			}
 		}
 	}
+	afsObjectFree(tmp);
 }
 
 
@@ -496,7 +497,10 @@ afsStateSpace *afsStateSpaceImportFromFile(const char *fileName){
 	newStateSpace = afsStateSpaceNew();
 	newStateSpace->nstates = ns;
 	tmp=fgets(line,linebuf,infile);
-
+	if (tmp == NULL || c == 0){
+		fprintf(stderr,"Error peaking in infile!\n");
+		exit(1);
+	}
 	for(l=0;l<ns;l++){
 		newStateSpace->states[l] = afsObjectNew(m1,m2);
 		for(i=0;i<m1+1;i++){
