@@ -565,7 +565,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 		VecSetValue(params->bInv,j,one,INSERT_VALUES);
 		VecAssemblyBegin(params->bInv);
 		VecAssemblyEnd(params->bInv);
-		KSPSolve(params->ksp,params->b,params->x);
+		KSPSolve(params->ksp,params->bInv,params->xInv);
 		VecGetValues(params->x,N,idx,hold);
 		MatSetValues(params->denseMat1,1,&j,N,idx,hold,INSERT_VALUES);
 	}
