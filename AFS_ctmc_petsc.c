@@ -551,7 +551,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	
 	
 	KSPCreate(PETSC_COMM_WORLD,&params->ksp);
-	KSPSetFromOptions(currentParams->ksp);
+	KSPSetFromOptions(params->ksp);
 	KSPSetOperators(params->ksp,params->D,params->D);
 
 
