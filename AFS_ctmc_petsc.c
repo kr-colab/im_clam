@@ -561,7 +561,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	for(j=0;j<N;j++) idx[j]=j;
 
 	////Compute Entire Inverse Mat
-	for(j=iStart;j<iEnd;j++){
+	for(j=0;j<N;j++){
 	//create unit array for solve
 		VecZeroEntries(params->bInv);
 		VecSetValue(params->bInv,j,one,INSERT_VALUES);
