@@ -93,6 +93,7 @@ void fillPetscTransMats(afsStateSpace *S, double *topol, int *moveType, int *nzC
 			MatSetValue(*CTMC,k,k,0.0-rowSums[k],INSERT_VALUES);				
 			newnz++;
 		}
+		MatSetValue(*DTMC,k,k,0.0,INSERT_VALUES);
 	}
 	*nzCount = newnz;
 	/* Assemble the matrix */
