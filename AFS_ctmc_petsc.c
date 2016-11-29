@@ -550,6 +550,8 @@ void calcLogAFS_IM_allPETSC(void * p){
 	MatTranspose(params->D,MAT_REUSE_MATRIX,&params->D);
 	VecZeroEntries(params->xInv);
 	
+	KSPCreate(PETSC_COMM_WORLD,&currentParams->ksp);
+	KSPSetFromOptions(currentParams->ksp);
 	KSPSetOperators(params->ksp,params->D,params->D);
 
 
@@ -581,7 +583,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 //	cs_nfree(NN);
 //	cs_sfree(S);
 	PetscFree(idx);
-
+	KSPDestroy(&params->ksp);
 //	MatView(params->denseMat1,PETSC_VIEWER_STDOUT_WORLD);
 
 	//broadcast the invMat[0,] as vector to each processor
