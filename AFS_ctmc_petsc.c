@@ -548,7 +548,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	//subtract DTMC mat from identity
 	MatAXPY(params->ident,negOne,params->D,DIFFERENT_NONZERO_PATTERN);
 	MatTranspose(params->D,MAT_REUSE_MATRIX,&params->D);
-	VecZeroEntries(params->xInv);
+	
 	
 	KSPCreate(PETSC_COMM_WORLD,&currentParams->ksp);
 	KSPSetFromOptions(currentParams->ksp);
@@ -564,9 +564,12 @@ void calcLogAFS_IM_allPETSC(void * p){
 	for(j=0;j<N;j++){
 	//create unit array for solve
 		VecZeroEntries(params->bInv);
+		VecZeroEntries(params->xInv);
 		VecSetValue(params->bInv,j,one,INSERT_VALUES);
 		VecAssemblyBegin(params->bInv);
 		VecAssemblyEnd(params->bInv);
+		VecAssemblyBegin(params->xInv);
+		VecAssemblyEnd(params->xInv);
 		KSPSolve(params->ksp,params->bInv,params->xInv);
 		VecGetValues(params->x,N,idx,hold);
 		MatSetValues(params->denseMat1,1,&j,N,idx,hold,INSERT_VALUES);
