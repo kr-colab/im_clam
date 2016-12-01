@@ -22,11 +22,11 @@ typedef struct clam_lik_params{
 	cs_di *spMat, *mt, *eye, *tmpMat, *tmpMat2;
 	Vec  x_0, x, u,bP, u2, bP2, v, y, v_seq, *x2, ancStateVec, ancResVec;
 	Vec xInv,bInv;
-	Mat            ident,C, C2, C_transpose, D, D_copy, F, denseMat1, denseMat2, denseMat3;
+	Mat            ident,C, C2, C_transpose, D, D_copy, F, denseIdent, denseMat1, denseMat2, denseMat3;
 	VecScatter	ctx;
 	MFN                mfn;
 	PetscInt        iStart,iEnd;
-	KSP            ksp;         /* linear solver context */
+      /* linear solver context */
 	PC             pc;           /* preconditioner context */
 	
 }clam_lik_params;

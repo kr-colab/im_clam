@@ -503,17 +503,17 @@ void calcLogAFS_IM(void * p){
 //calcLogAFS_IM_allPETSC -- returns the expects log AFS from an IM model; only uses PETSC
 void calcLogAFS_IM_allPETSC(void * p){
 	struct clam_lik_params * params = (struct clam_lik_params *) p;
- 	int i,j, N = params->stateSpace->nstates;
-  	cs *spMat, *mt, *ident, *eye, *tmpMat ;
-  	double timeV, sum, thetaA, theta2, mig1, mig2;
-  	int Na;
-  	gsl_vector *tmpStates;
- 	css *S ;
+	int i,j, N = params->stateSpace->nstates;
+	cs *spMat, *mt, *ident, *eye, *tmpMat ;
+	double timeV, sum, thetaA, theta2, mig1, mig2;
+	int Na;
+	gsl_vector *tmpStates;
+	css *S ;
 	csn *NN ;
 	int n,Ntmp ;
 	double *xx;
 	Vec            x,b,u;  /* approx solution, RHS, exact solution */
- 	PetscInt        iStart,iEnd, *idx,its;
+	PetscInt        iStart,iEnd, *idx,its;
 	const PetscInt *idx2;
 	PetscScalar    *tmpArray;
 	PetscScalar negOne = -1.0;
@@ -521,72 +521,91 @@ void calcLogAFS_IM_allPETSC(void * p){
 	PetscScalar hold[N];
 	const PetscScalar *tmpArrayC;
 	PetscErrorCode ierr;
+	IS perm,iperm;
+	MatFactorInfo  info;
 	MFNConvergedReason reason;
-	
- 	//initialize some vectors
- 	gsl_vector_set_zero(params->rates);
+
+
+	//initialize some vectors
+	gsl_vector_set_zero(params->rates);
 	MatZeroEntries(params->C);
 	MatZeroEntries(params->C2);
 	MatZeroEntries(params->D);
- 	tmpStates = gsl_vector_alloc(N);
+	tmpStates = gsl_vector_alloc(N);
 	Ntmp=N;
 	Na=params->Na;
- 	//For straight MLE the paramVector takes the form [N2,NA,m1,m2,t]
- 	theta2 = gsl_vector_get(params->paramVector,0);
- 	thetaA = gsl_vector_get(params->paramVector,1);
- 	mig1 = gsl_vector_get(params->paramVector,2);
- 	mig2 = gsl_vector_get(params->paramVector,3);
- 	timeV = gsl_vector_get(params->paramVector,4);
+
+	//For straight MLE the paramVector takes the form [N2,NA,m1,m2,t]
+	theta2 = gsl_vector_get(params->paramVector,0);
+	thetaA = gsl_vector_get(params->paramVector,1);
+	mig1 = gsl_vector_get(params->paramVector,2);
+	mig2 = gsl_vector_get(params->paramVector,3);
+	timeV = gsl_vector_get(params->paramVector,4);
 // 	printf("params-> %f %f %f %f %f\n",theta2,thetaA,mig1,mig2,timeV);
 // 	printf("nnz %d nnzA%d \n",params->nnz,params->nnzA);
- 
+
 	//fill transMat
 	fillPetscTransMats(params->stateSpace, params->top, params->move, &params->nnz,
 		params->dim1, params->dim2, 1, theta2, mig1, mig2, &params->D, &params->C, params->rates);
- 	
+
 	//using CSparse
 	// S = (I-P)^-1
 	//subtract DTMC mat from identity
-	MatAXPY(params->ident,negOne,params->D,DIFFERENT_NONZERO_PATTERN);
-	MatTranspose(params->D,MAT_REUSE_MATRIX,&params->D);
 	
-	
-	KSPCreate(PETSC_COMM_WORLD,&params->ksp);
-	KSPSetFromOptions(params->ksp);
-	KSPSetOperators(params->ksp,params->D,params->D);
+	MatZeroEntries(params->D_copy);
+	MatCopy(params->ident,params->D_copy,DIFFERENT_NONZERO_PATTERN);
+	MatAXPY(params->D_copy,negOne,params->D,DIFFERENT_NONZERO_PATTERN);
+//	MatTranspose(params->D_copy,MAT_REUSE_MATRIX,&params->D);
+
+	ierr = MatGetOrdering(params->D_copy,  MATORDERINGNATURAL,  &perm,  &iperm);
+	     
+	ierr = MatFactorInfoInitialize(&info); 
+	ierr = MatGetFactor(params->D_copy,MATSOLVERMUMPS,MAT_FACTOR_LU,&params->F); 
+	PetscInt icntl_7 = 5;
+	ierr = MatMumpsSetIcntl(params->F,7,icntl_7);
+	info.fill = 5.0; 
+	ierr = MatLUFactorSymbolic(params->F,params->D_copy,perm,iperm,&info);
+	ierr = MatLUFactorNumeric(params->F,params->D_copy,&info);
 
 
-	
-	MatGetOwnershipRange(params->denseMat1,&iStart,&iEnd);
-	PetscMalloc1(N,&idx);
-	for(j=0;j<N;j++) idx[j]=j;
+	//ierr = MatLUFactor(params->D_copy, perm, iperm, &info); 
 
 	////Compute Entire Inverse Mat
-	for(j=0;j<N;j++){
-	//create unit array for solve
-		VecZeroEntries(params->bInv);
-		VecZeroEntries(params->xInv);
-		VecSetValue(params->bInv,j,one,INSERT_VALUES);
-		VecAssemblyBegin(params->bInv);
-		VecAssemblyEnd(params->bInv);
+	ierr = MatMatSolve(params->F,params->denseIdent,params->denseMat1); 
 
-		KSPSolve(params->ksp,params->bInv,params->xInv);
-		VecGetValues(params->x,N,idx,hold);
-		MatSetValues(params->denseMat1,1,&j,N,idx,hold,INSERT_VALUES);
-	}
-	MatAssemblyBegin(params->denseMat1,MAT_FINAL_ASSEMBLY);
-	MatAssemblyEnd(params->denseMat1,MAT_FINAL_ASSEMBLY);
-	//temporary clean up
-//	free(xx);
-//	cs_spfree(spMat);
-//	cs_spfree(mt);
-//	cs_spfree(ident);
-//	cs_spfree(eye);
-//	cs_spfree(tmpMat);
-//	cs_nfree(NN);
-//	cs_sfree(S);
-	PetscFree(idx);
-	KSPDestroy(&params->ksp);
+
+	//MatView(params->denseMat1,PETSC_VIEWER_STDOUT_SELF);	
+
+//	MatGetOwnershipRange(params->denseMat1,&iStart,&iEnd);
+//	PetscMalloc1(N,&idx);
+//	for(j=0;j<N;j++) idx[j]=j;
+
+
+// 	for(j=0;j<N;j++){
+// 	//create unit array for solve
+// 		VecZeroEntries(params->bInv);
+// 		VecZeroEntries(params->xInv);
+// 		VecSetValue(params->bInv,j,one,INSERT_VALUES);
+// 		VecAssemblyBegin(params->bInv);
+// 		VecAssemblyEnd(params->bInv);
+// 
+// 		KSPSolve(params->ksp,params->bInv,params->xInv);
+// 		VecGetValues(params->x,N,idx,hold);
+// 		MatSetValues(params->denseMat1,1,&j,N,idx,hold,INSERT_VALUES);
+// 	}
+// 	MatAssemblyBegin(params->denseMat1,MAT_FINAL_ASSEMBLY);
+// 	MatAssemblyEnd(params->denseMat1,MAT_FINAL_ASSEMBLY);
+// 	//temporary clean up
+// //	free(xx);
+// //	cs_spfree(spMat);
+// //	cs_spfree(mt);
+// //	cs_spfree(ident);
+// //	cs_spfree(eye);
+// //	cs_spfree(tmpMat);
+// //	cs_nfree(NN);
+// //	cs_sfree(S);
+// 	PetscFree(idx);
+// 	KSPDestroy(&params->ksp);
 //	MatView(params->denseMat1,PETSC_VIEWER_STDOUT_WORLD);
 
 	//broadcast the invMat[0,] as vector to each processor
@@ -596,7 +615,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 		MatRestoreRow(params->denseMat1,0,&Ntmp,&idx2,&tmpArrayC);	//have to use Ntmp here as MatRestoreRow does something funky
 	}
 	MPI_Bcast(params->b,N,MPI_DOUBLE,0,PETSC_COMM_WORLD);
-	
+
 
 	//Get Island Time 0-INF Unnormal
 	gsl_matrix_set_zero(params->expAFS);
@@ -608,7 +627,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	// 	}
 	// 	printf("\n");
 	// }
-	
+
 	//Matrix Exponentiation to get state vector at time t
 	//SLEPC Stuff ahead!
 	/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -624,7 +643,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	/*
 	Set solver parameters at runtime
 	*/
-	
+
 	ierr = MFNSetScaleFactor(params->mfn,timeV); CHKERRV(ierr);
 	ierr = MFNSetFromOptions(params->mfn);CHKERRV(ierr);
 
@@ -657,7 +676,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	VecScatterDestroy(&params->ctx);
 	VecDestroy(&params->v_seq);
 	VecDuplicate(params->y,&params->x);
-	
+
 	//VecView(y, PETSC_VIEWER_STDOUT_WORLD);
 	MatMultTranspose(params->denseMat1,params->y,params->x);
 	VecScatterCreateToAll(params->x,&params->ctx,&params->v_seq);
@@ -681,7 +700,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	///////
 
 	gsl_matrix_sub(params->expAFS,params->expAFS2);
-	
+
 	//////////////////////
 	//Final phase, collapse popns, reset rates
 	//now collapse populations
@@ -697,7 +716,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	//Re-Fill trans mats for Ancestral Params
 
 	params->nnzA = coalMarkovChainTopologyMatrix_sparse(params->reducedStateSpace,params->topA,params->moveA, params->dim1A, params->dim2A);
-	
+
 	tmpMat=fillPetscCsparseTransMats(params->reducedStateSpace, params->topA, params->moveA, &params->nnzA,
 		params->dim1A, params->dim2A, thetaA, 0, 0, 0, &params->C2, params->rates);
 	//////////////////////
@@ -711,7 +730,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	for(i=0;i<Na;i++) cs_entry(ident,i,i,1);	
 	eye = cs_compress(ident);	
 	spMat = cs_add(eye,tmpMat,1.0,-1.0);
-	
+
 	//cs_print_adk(spMat);
 	mt = cs_transpose(spMat,1);
 	//VecView(y,PETSC_VIEWER_STDOUT_WORLD);
@@ -721,7 +740,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	xx = cs_malloc (n, sizeof (double)) ;    /* get workspace */
 	MatGetOwnershipRange(params->denseMat2,&iStart,&iEnd);
 //	printf("here\n");
-	PetscFree(idx);
+//	PetscFree(idx);
 	PetscMalloc1(Na,&idx);
 	for(j=0;j<Na;j++) idx[j]=j;
 	////Compute Entire Inverse Mat
@@ -740,7 +759,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	MatAssemblyBegin(params->denseMat2,MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(params->denseMat2,MAT_FINAL_ASSEMBLY);
 	free(xx);
-	
+
 	MatMultTranspose(params->denseMat2,params->ancStateVec,params->ancResVec);
 	VecScatterCreateToAll(params->ancResVec,&params->ctx,&params->v_seq);
 	VecScatterBegin(params->ctx,params->ancResVec,params->v_seq,INSERT_VALUES,SCATTER_FORWARD);
@@ -771,7 +790,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	// }
 
 	//if(params->rank==0)printf("////////////////////normalized IM:\n");
-			
+
 	gsl_matrix_add(params->expAFS,params->expAFS2);
 	sum = matrixSumDouble(params->expAFS);
 	gsl_matrix_scale(params->expAFS, 1.0 / sum);
@@ -782,7 +801,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	// 		if(params->rank==0)printf("\n");
 	// 	}
 	// 	
-	
+
 	//clean up
 	PetscFree(idx);
 	VecDestroy(&params->y);
@@ -797,7 +816,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	gsl_vector_free(tmpStates);
 	cs_nfree(NN);
 	cs_sfree(S);
-	
+
 }
 double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p){
 	int i,j;

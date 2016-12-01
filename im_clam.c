@@ -68,7 +68,7 @@ int main(int argc, char **argv){
 	PetscErrorCode ierr;
 	PetscMPIInt    rank,size;
 	PetscBool      flg,obsFlag;
-	Vec tmpVec;
+//	Vec tmpVec;
 	int dim=5;
 	double snpNumber, pi_est, p, N0;
 	double u=1e-8;
@@ -77,7 +77,8 @@ int main(int argc, char **argv){
 	FILE *infile;
 	int testInt=0;
 	PetscScalar one = 1.0;
-
+	KSP ksp;
+	 
 	///////////////////
 	/////	PETSC / Slepc library version of this code
 	SlepcInitialize(&argc,&argv,(char*)0,help);
@@ -200,18 +201,31 @@ int main(int argc, char **argv){
 	gsl_vector_set_all(currentParams->paramVector,1.0);
 	currentParams->fEvals=0;
 
-	
-	//set up some petsc matrices
+	//MUMPS solver
+	// KSPCreate(PETSC_COMM_WORLD,&ksp);
+	// KSPSetType(ksp,KSPPREONLY);
+	// KSPGetPC(ksp,&currentParams->pc);
+	// 	
+	// PCSetType(currentParams->pc,PCLU);
+	// PCFactorSetMatSolverPackage(currentParams->pc,MATSOLVERMUMPS);
+	// 
+	//set up some petsc matrices//////////////////////////////////////////////////////////////
+	//
+	//
 	ierr = MatCreate(PETSC_COMM_WORLD,&currentParams->C);CHKERRQ(ierr);
 //	MatSetType(C,MATMPIAIJ);
 	ierr = MatSetSizes(currentParams->C, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
 	ierr = MatSetFromOptions(currentParams->C);CHKERRQ(ierr);
 //	MatSetOption(currentParams->C, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 	ierr = MatSetUp(currentParams->C);CHKERRQ(ierr);
+
 	ierr = MatCreateDense(PETSC_COMM_WORLD,PETSC_DECIDE, PETSC_DECIDE, N, N, NULL, &currentParams->denseMat1);CHKERRQ(ierr);
-	
-	ierr = MFNCreate(PETSC_COMM_WORLD,&currentParams->mfn);CHKERRQ(ierr);
-	
+//	ierr = MatSetFromOptions(currentParams->denseMat1);CHKERRQ(ierr);   
+	MatAssemblyBegin(currentParams->denseMat1,MAT_FINAL_ASSEMBLY);
+  	MatAssemblyEnd(currentParams->denseMat1,MAT_FINAL_ASSEMBLY);
+
+	///////// Set up MFN ////////////////////////////////////////////////////////////////////////////////////////
+	ierr = MFNCreate(PETSC_COMM_WORLD,&currentParams->mfn);CHKERRQ(ierr);	
 	ierr = MFNSetFunction(currentParams->mfn,SLEPC_FUNCTION_EXP);CHKERRQ(ierr);
 	ierr = MFNSetTolerances(currentParams->mfn,1e-07,PETSC_DEFAULT);CHKERRQ(ierr);
 	
@@ -241,21 +255,40 @@ int main(int argc, char **argv){
 	ierr = MatSetFromOptions(currentParams->D);CHKERRQ(ierr);
 	ierr = MatSetUp(currentParams->D);CHKERRQ(ierr);
 	
+	ierr = MatCreate(PETSC_COMM_WORLD,&currentParams->D_copy);CHKERRQ(ierr);
+	ierr = MatSetSizes(currentParams->D_copy, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
+	ierr = MatSetFromOptions(currentParams->D_copy);CHKERRQ(ierr);
+	ierr = MatSetUp(currentParams->D_copy);CHKERRQ(ierr);
+	
+	//sparse identity mat
 	ierr = MatCreate(PETSC_COMM_WORLD,&currentParams->ident);CHKERRQ(ierr);
 	ierr = MatSetSizes(currentParams->ident, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
 	ierr = MatSetFromOptions(currentParams->ident);CHKERRQ(ierr);
 	ierr = MatSetUp(currentParams->ident);CHKERRQ(ierr);
-	
-	/* Assemble the matrix */
+
   	MatAssemblyBegin(currentParams->ident,MAT_FINAL_ASSEMBLY);
   	MatAssemblyEnd(currentParams->ident,MAT_FINAL_ASSEMBLY);
 	MatShift(currentParams->ident,one);
+	
+	//dense identity mat
+	ierr = MatCreateDense(PETSC_COMM_WORLD,PETSC_DECIDE, PETSC_DECIDE, N, N, NULL, &currentParams->denseIdent);CHKERRQ(ierr);
+	ierr = MatSetFromOptions(currentParams->denseIdent);CHKERRQ(ierr);   
+	
+	MatAssemblyBegin(currentParams->denseIdent,MAT_FINAL_ASSEMBLY);
+  	MatAssemblyEnd(currentParams->denseIdent,MAT_FINAL_ASSEMBLY);
+	MatShift(currentParams->denseIdent,one);
 	
 
 	VecCreate(PETSC_COMM_WORLD,&currentParams->xInv);
 	VecSetSizes(currentParams->xInv,PETSC_DECIDE,N);
 	VecSetFromOptions(currentParams->xInv);
 	VecDuplicate(currentParams->xInv,&currentParams->bInv);
+	
+
+
+	
+	///////////////////////////////////////
+	
 	//////////////////////////////
 	
 	// setup done! ///////////////
@@ -285,7 +318,10 @@ int main(int argc, char **argv){
 		N0=pi_est / u;
 	}
 	////////////////////////////
-
+	time2=clock();
+	if(rank==0)printf("setup time:%f secs\n\n",(double) (time2-time1)/CLOCKS_PER_SEC);
+	
+	time1=clock();
 	//expected AFS
 	switch(runMode){
 		
@@ -330,6 +366,21 @@ int main(int argc, char **argv){
 			for(i=0;i<dim;i++)printf("%f\t",gsl_vector_get(currentParams->paramVector,i));
 			printf("\n\n");
 		}
+		time2=clock();
+		if(rank==0)printf("all PETSC time:%f secs\n Liklihood Func. Evals: %d\n",(double) (time2-time1)/CLOCKS_PER_SEC,currentParams->fEvals);
+		time1=clock();
+		calcLogAFS_IM(currentParams);
+		currentParams->nnz = nnz;
+		if(rank == 0){
+			printf("Expected AFS:\n");
+			gsl_matrix_prettyPrint(currentParams->expAFS);
+			printf("parameter values used:\n");
+			for(i=0;i<dim;i++)printf("%f\t",gsl_vector_get(currentParams->paramVector,i));
+			printf("\n\n");
+		}
+		time2=clock();
+		if(rank==0)printf("w/ CSPARSE time:%f secs\n Liklihood Func. Evals: %d\n",(double) (time2-time1)/CLOCKS_PER_SEC,currentParams->fEvals);
+		time1=clock();
 		break;
 		case 3:
 		if(rank==0){
