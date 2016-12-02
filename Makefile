@@ -8,8 +8,8 @@ HEADERS = AFS.h
 GLIB = `pkg-config --cflags glib-2.0 gsl nlopt` `pkg-config --libs glib-2.0 gsl nlopt`
 
 
-include ${PETSC_DIR}/conf/variables
-include ${PETSC_DIR}/conf/rules
+#include ${PETSC_DIR}/conf/variables
+#include ${PETSC_DIR}/conf/rules
 include ${SLEPC_DIR}/conf/slepc_common
 
 all:	cmc_stateSpace cmc_topol im_clam

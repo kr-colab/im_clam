@@ -512,13 +512,12 @@ void calcLogAFS_IM_allPETSC(void * p){
 	csn *NN ;
 	int n,Ntmp ;
 	double *xx;
-	Vec            x,b,u;  /* approx solution, RHS, exact solution */
-	PetscInt        iStart,iEnd, *idx,its;
+	PetscInt        iStart,iEnd, *idx;
 	const PetscInt *idx2;
 	PetscScalar    *tmpArray;
 	PetscScalar negOne = -1.0;
-	PetscScalar one = 1.0;
-	PetscScalar hold[N];
+//	PetscScalar one = 1.0;
+
 	const PetscScalar *tmpArrayC;
 	PetscErrorCode ierr;
 	IS perm,iperm;
@@ -560,7 +559,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	ierr = MatGetOrdering(params->D_copy,  MATORDERINGNATURAL,  &perm,  &iperm);
 	     
 	ierr = MatFactorInfoInitialize(&info); 
-	ierr = MatGetFactor(params->D_copy,MATSOLVERMUMPS,MAT_FACTOR_LU,&params->F); 
+	ierr = MatGetFactor(params->D_copy,MATSOLVERSUPERLU_DIST,MAT_FACTOR_LU,&params->F); 
 	PetscInt icntl_7 = 5;
 	ierr = MatMumpsSetIcntl(params->F,7,icntl_7);
 	info.fill = 5.0; 
@@ -809,6 +808,8 @@ void calcLogAFS_IM_allPETSC(void * p){
 	VecDestroy(&params->y);
 	VecDestroy(&params->x);
 	VecDestroy(&params->v);
+	ierr = ISDestroy(&perm);
+  	ierr = ISDestroy(&iperm);
 	PetscFree(tmpArray);
 	cs_spfree(spMat);
 	cs_spfree(mt);
@@ -835,7 +836,7 @@ double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p)
 	
 	//fill in the expAFS table
 	//calcLogAFS_IM(p);
-	calcLogAFS_IM(p);
+	calcLogAFS_IM_allPETSC(p);
 	params->nnz = localNNZ;
 	
 	//compute lik

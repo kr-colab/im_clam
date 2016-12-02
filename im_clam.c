@@ -77,7 +77,7 @@ int main(int argc, char **argv){
 	FILE *infile;
 	int testInt=0;
 	PetscScalar one = 1.0;
-	KSP ksp;
+
 	 
 	///////////////////
 	/////	PETSC / Slepc library version of this code
@@ -485,9 +485,15 @@ int main(int argc, char **argv){
 	MatDestroy(&currentParams->denseMat2);
 	MatDestroy(&currentParams->C);
 	MatDestroy(&currentParams->C2);
+	MatDestroy(&currentParams->D);
+	MatDestroy(&currentParams->D_copy);
+	MatDestroy(&currentParams->denseIdent);
+	MatDestroy(&currentParams->ident);
 	MFNDestroy(&currentParams->mfn);
 	VecDestroy(&currentParams->ancStateVec);
 	VecDestroy(&currentParams->ancResVec);
+	VecDestroy(&currentParams->xInv);
+	VecDestroy(&currentParams->bInv);
 	gsl_rng_free (r);
 	
 	afsStateSpaceFree(currentParams->reducedStateSpace);	
