@@ -608,6 +608,8 @@ void calcLogAFS_IM_allPETSC(void * p){
 // 	KSPDestroy(&params->ksp);
 //	MatView(params->denseMat1,PETSC_VIEWER_STDOUT_WORLD);
 
+
+	MatDestroy(&params->F);
 	//broadcast the invMat[0,] as vector to each processor
 	if(params->rank==0){
 		MatGetRow(params->denseMat1,0,&N,&idx2,&tmpArrayC);
@@ -833,7 +835,7 @@ double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p)
 	
 	//fill in the expAFS table
 	//calcLogAFS_IM(p);
-	calcLogAFS_IM_allPETSC(p);
+	calcLogAFS_IM(p);
 	params->nnz = localNNZ;
 	
 	//compute lik
