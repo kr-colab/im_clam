@@ -77,7 +77,7 @@ int main(int argc, char **argv){
 	FILE *infile;
 	int testInt=0;
 	PetscScalar one = 1.0;
-
+	cs *ident;
 	 
 	///////////////////
 	/////	PETSC / Slepc library version of this code
@@ -201,17 +201,17 @@ int main(int argc, char **argv){
 	gsl_vector_set_all(currentParams->paramVector,1.0);
 	currentParams->fEvals=0;
 
-	//MUMPS solver
-	// KSPCreate(PETSC_COMM_WORLD,&ksp);
-	// KSPSetType(ksp,KSPPREONLY);
-	// KSPGetPC(ksp,&currentParams->pc);
-	// 	
-	// PCSetType(currentParams->pc,PCLU);
-	// PCFactorSetMatSolverPackage(currentParams->pc,MATSOLVERMUMPS);
-	// 
+
+//	currentParams->triplet = cs_spalloc(N, N, nnz + N , 1, 1); //alloc sparse mat with extra space for nonzero identity mats
+	ident = cs_spalloc(N,N,N,1,1);
+	for(i=0;i<N;i++) cs_entry(ident,i,i,1);
+	currentParams->eye = cs_compress(ident);
+	cs_spfree(ident);
+	
 	//set up some petsc matrices//////////////////////////////////////////////////////////////
 	//
 	//
+	
 	ierr = MatCreate(PETSC_COMM_WORLD,&currentParams->C);CHKERRQ(ierr);
 //	MatSetType(C,MATMPIAIJ);
 	ierr = MatSetSizes(currentParams->C, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
@@ -249,40 +249,45 @@ int main(int argc, char **argv){
 
 	ierr = MatCreateDense(PETSC_COMM_WORLD,PETSC_DECIDE, PETSC_DECIDE, currentParams->Na, currentParams->Na, NULL, &currentParams->denseMat2);CHKERRQ(ierr);
 	
-	//DTMC with PETSC  /////////////
-	ierr = MatCreate(PETSC_COMM_WORLD,&currentParams->D);CHKERRQ(ierr);
-	ierr = MatSetSizes(currentParams->D, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
-	ierr = MatSetFromOptions(currentParams->D);CHKERRQ(ierr);
-	ierr = MatSetUp(currentParams->D);CHKERRQ(ierr);
+	ident = cs_spalloc(currentParams->Na,currentParams->Na,currentParams->Na,1,1);
+	for(i=0;i<currentParams->Na;i++) cs_entry(ident,i,i,1);
+	currentParams->eyeAnc = cs_compress(ident);
+	cs_spfree(ident);
 	
-	ierr = MatCreate(PETSC_COMM_WORLD,&currentParams->D_copy);CHKERRQ(ierr);
-	ierr = MatSetSizes(currentParams->D_copy, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
-	ierr = MatSetFromOptions(currentParams->D_copy);CHKERRQ(ierr);
-	ierr = MatSetUp(currentParams->D_copy);CHKERRQ(ierr);
+	//DTMC with PETSC  /////////////
+//	ierr = MatCreate(PETSC_COMM_WORLD,&currentParams->D);CHKERRQ(ierr);
+//	ierr = MatSetSizes(currentParams->D, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
+//	ierr = MatSetFromOptions(currentParams->D);CHKERRQ(ierr);
+//	ierr = MatSetUp(currentParams->D);CHKERRQ(ierr);
+	
+//	ierr = MatCreate(PETSC_COMM_WORLD,&currentParams->D_copy);CHKERRQ(ierr);
+//	ierr = MatSetSizes(currentParams->D_copy, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
+//	ierr = MatSetFromOptions(currentParams->D_copy);CHKERRQ(ierr);
+//	ierr = MatSetUp(currentParams->D_copy);CHKERRQ(ierr);
 	
 	//sparse identity mat
-	ierr = MatCreate(PETSC_COMM_WORLD,&currentParams->ident);CHKERRQ(ierr);
-	ierr = MatSetSizes(currentParams->ident, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
-	ierr = MatSetFromOptions(currentParams->ident);CHKERRQ(ierr);
-	ierr = MatSetUp(currentParams->ident);CHKERRQ(ierr);
+//	ierr = MatCreate(PETSC_COMM_WORLD,&currentParams->ident);CHKERRQ(ierr);
+//	ierr = MatSetSizes(currentParams->ident, PETSC_DECIDE, PETSC_DECIDE,N,N);CHKERRQ(ierr);
+//	ierr = MatSetFromOptions(currentParams->ident);CHKERRQ(ierr);
+//	ierr = MatSetUp(currentParams->ident);CHKERRQ(ierr);
 
-  	MatAssemblyBegin(currentParams->ident,MAT_FINAL_ASSEMBLY);
-  	MatAssemblyEnd(currentParams->ident,MAT_FINAL_ASSEMBLY);
-	MatShift(currentParams->ident,one);
+  //	MatAssemblyBegin(currentParams->ident,MAT_FINAL_ASSEMBLY);
+  //	MatAssemblyEnd(currentParams->ident,MAT_FINAL_ASSEMBLY);
+//	MatShift(currentParams->ident,one);
 	
 	//dense identity mat
-	ierr = MatCreateDense(PETSC_COMM_WORLD,PETSC_DECIDE, PETSC_DECIDE, N, N, NULL, &currentParams->denseIdent);CHKERRQ(ierr);
-	ierr = MatSetFromOptions(currentParams->denseIdent);CHKERRQ(ierr);   
+//	ierr = MatCreateDense(PETSC_COMM_WORLD,PETSC_DECIDE, PETSC_DECIDE, N, N, NULL, &currentParams->denseIdent);CHKERRQ(ierr);
+//	ierr = MatSetFromOptions(currentParams->denseIdent);CHKERRQ(ierr);   
 	
-	MatAssemblyBegin(currentParams->denseIdent,MAT_FINAL_ASSEMBLY);
-  	MatAssemblyEnd(currentParams->denseIdent,MAT_FINAL_ASSEMBLY);
-	MatShift(currentParams->denseIdent,one);
+//	MatAssemblyBegin(currentParams->denseIdent,MAT_FINAL_ASSEMBLY);
+  //	MatAssemblyEnd(currentParams->denseIdent,MAT_FINAL_ASSEMBLY);
+//	MatShift(currentParams->denseIdent,one);
 	
 
-	VecCreate(PETSC_COMM_WORLD,&currentParams->xInv);
-	VecSetSizes(currentParams->xInv,PETSC_DECIDE,N);
-	VecSetFromOptions(currentParams->xInv);
-	VecDuplicate(currentParams->xInv,&currentParams->bInv);
+//	VecCreate(PETSC_COMM_WORLD,&currentParams->xInv);
+//	VecSetSizes(currentParams->xInv,PETSC_DECIDE,N);
+//	VecSetFromOptions(currentParams->xInv);
+//	VecDuplicate(currentParams->xInv,&currentParams->bInv);
 	
 
 
@@ -357,18 +362,6 @@ int main(int argc, char **argv){
 		for(i=0;i<5;i++){
 			gsl_vector_set(currentParams->paramVector,i,mle[i]);
 		}
-		calcLogAFS_IM_allPETSC(currentParams);
-		currentParams->nnz = nnz;
-		if(rank == 0){
-			printf("Expected AFS:\n");
-			gsl_matrix_prettyPrint(currentParams->expAFS);
-			printf("parameter values used:\n");
-			for(i=0;i<dim;i++)printf("%f\t",gsl_vector_get(currentParams->paramVector,i));
-			printf("\n\n");
-		}
-		time2=clock();
-		if(rank==0)printf("all PETSC time:%f secs\n Liklihood Func. Evals: %d\n",(double) (time2-time1)/CLOCKS_PER_SEC,currentParams->fEvals);
-		time1=clock();
 		calcLogAFS_IM(currentParams);
 		currentParams->nnz = nnz;
 		if(rank == 0){

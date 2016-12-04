@@ -200,6 +200,100 @@ struct cs_di_sparse * fillPetscCsparseTransMats(afsStateSpace *S, double *topol,
 	return(tmat);
 }
 
+//fillPetscCsparseTransMats_prealloc--this function fills one petsc matrix with CTMC transmat and returns pointer to CSparse matrix for DTMC trans mat
+// also fills the rates vector
+struct cs_di_sparse * fillPetscCsparseTransMats_prealloc(afsStateSpace *S, double *topol, int *moveType, int *nzCount,
+	int *dim1, int *dim2, double theta1, double theta2, double mig1, double mig2,
+	Mat *CTMC, gsl_vector *rates, struct cs_di_sparse *triplet){
+		
+	int i, j,k, newnz, abcount=0;
+	int N = S->nstates,abFlag;
+	double  c0r[N],c1r[N],m0r[N],m1r[N],totR[N],rowSums[N], tmp;
+	struct cs_di_sparse *tmat;
+	
+	
+	gsl_vector_set_zero(rates);
+	//set rates vector
+	for(i=0;i<N;i++){
+		c0r[i] = S->states[i]->aCounts[0] * (S->states[i]->aCounts[0]-1)  / theta1 ;
+		if(theta2 == 0)
+			c1r[i] = 0.0;
+		else
+			c1r[i] = S->states[i]->aCounts[1] * (S->states[i]->aCounts[1]-1)  / theta2;
+		m0r[i] = S->states[i]->aCounts[0] * mig1 ;
+		m1r[i] = S->states[i]->aCounts[1] * mig2 ;
+		totR[i] = c0r[i] + c1r[i] + m0r[i] + m1r[i];
+	
+		
+		rowSums[i] = 0.0;
+		if(S->states[i]->nalleles > 1  && c0r[i] >= 0 && c1r[i] >= 0 && totR[i] != 0.0)
+			gsl_vector_set(rates,i,1.0/totR[i]);
+		else
+			gsl_vector_set(rates,i,0);
+	}
+
+	newnz=0;
+	for(k=0;k<*nzCount;k++){
+		i = dim1[k];
+		j= dim2[k];
+//		printf("i: %d, j:%d, movetype: %d\n",i,j,moveType[k]);
+		if(S->states[i]->nalleles ==1 || S->states[j]->nalleles ==1 )abFlag=1;
+	//	if(S->states[i]->nalleles ==1 )abFlag=1;
+		else abFlag = 0;
+		switch(moveType[k]){
+			case 0: //coal pop0
+			if(totR[i]==0)tmp=0;
+			else tmp = c0r[i] / totR[i] * topol[k];
+		//	printf("here--- i:%d j:%d tmp*totR[i]:%f",i,j,tmp*totR[i]);
+			MatSetValue(*CTMC,i,j,tmp*totR[i],INSERT_VALUES);	
+			rowSums[i] += tmp* totR[i];
+			if(abFlag==0)cs_entry(triplet,i,j,tmp);				
+			break;
+			case 1: //coal pop1
+			if(totR[i]==0)tmp=0;
+			else tmp = c1r[i] / totR[i] * topol[k];
+			
+			MatSetValue(*CTMC,i,j,tmp*totR[i],INSERT_VALUES);	
+			rowSums[i] += tmp* totR[i];
+			if(abFlag==0)cs_entry(triplet,i,j,tmp);			
+			break;
+			case 2: //mig pop0
+			if(totR[i]==0)tmp=0;
+			else tmp = m0r[i] / totR[i] * topol[k];
+		
+			MatSetValue(*CTMC,i,j,tmp*totR[i],INSERT_VALUES);	
+			rowSums[i] += tmp* totR[i];
+			if(abFlag==0)cs_entry(triplet,i,j,tmp);			
+			break;
+			case 3: //mig pop1
+			if(totR[i]==0)tmp=0;
+			else tmp = m1r[i] / totR[i] * topol[k];			
+		
+			MatSetValue(*CTMC,i,j,tmp*totR[i],INSERT_VALUES);	
+			rowSums[i] += tmp* totR[i];
+			if(abFlag==0)cs_entry(triplet,i,j,tmp);		
+			break;
+			case -1:
+			abcount+=1;
+			break;			
+		}
+	}
+	newnz=*nzCount ;
+	//now add diagonal elements; topol pre-set to -1
+	for(k=0;k<N;k++){
+		if((rowSums[k]) != 0.0){
+			MatSetValue(*CTMC,k,k,0.0-rowSums[k],INSERT_VALUES);				
+			newnz++;
+		}
+	}
+	*nzCount = newnz;
+	/* Assemble the matrix */
+  	MatAssemblyBegin(*CTMC,MAT_FINAL_ASSEMBLY);
+  	MatAssemblyEnd(*CTMC,MAT_FINAL_ASSEMBLY);
+	tmat = cs_compress(triplet);
+	return(tmat);
+}
+
 //calcLogAFS_IM -- returns the expects log AFS from an IM model
 void calcLogAFS_IM(void * p){
 	struct clam_lik_params * params = (struct clam_lik_params *) p;
@@ -236,16 +330,18 @@ void calcLogAFS_IM(void * p){
 // 	printf("nnz %d nnzA%d \n",params->nnz,params->nnzA);
  
 	//fill transMat
- 	tmpMat = fillPetscCsparseTransMats(params->stateSpace, params->top, params->move, &params->nnz,
- 		params->dim1, params->dim2, 1, theta2, mig1, mig2,  &params->C, params->rates);
- 	
+ //	tmpMat = fillPetscCsparseTransMats_prealloc(params->stateSpace, params->top, params->move, &params->nnz,
+ //		params->dim1, params->dim2, 1, theta2, mig1, mig2,  &params->C, params->rates,params->triplet);
+ 
+	tmpMat = fillPetscCsparseTransMats(params->stateSpace, params->top, params->move, &params->nnz,
+	 		params->dim1, params->dim2, 1, theta2, mig1, mig2,  &params->C, params->rates);	
 	//using CSparse
 	// S = (I-P)^-1
 	//add negative ident
-	ident = cs_spalloc(N,N,N,1,1);
-	for(i=0;i<N;i++) cs_entry(ident,i,i,1);
-	eye = cs_compress(ident);
-	spMat = cs_add(eye,tmpMat,1.0,-1.0);
+//	ident = cs_spalloc(N,N,N,1,1);
+//	for(i=0;i<N;i++) cs_entry(ident,i,i,1);
+//	eye = cs_compress(ident);
+	spMat = cs_add(params->eye,tmpMat,1.0,-1.0);
 	//cs_print_adk(spMat);
 	mt = cs_transpose(spMat,1);
 	//cs_print_adk(mt);
@@ -279,8 +375,8 @@ void calcLogAFS_IM(void * p){
 	free(xx);
 	cs_spfree(spMat);
 	cs_spfree(mt);
-	cs_spfree(ident);
-	cs_spfree(eye);
+//	cs_spfree(ident);
+//	cs_spfree(eye);
 	cs_spfree(tmpMat);
 	cs_nfree(NN);
 	cs_sfree(S);
@@ -406,11 +502,11 @@ void calcLogAFS_IM(void * p){
 	/////////
 	//////
 	//add negative ident
-	ident = cs_spalloc(Na,Na,Na,1,1);
-	for(i=0;i<Na;i++) cs_entry(ident,i,i,1);	
-	eye = cs_compress(ident);	
-	spMat = cs_add(eye,tmpMat,1.0,-1.0);
-	
+//	ident = cs_spalloc(Na,Na,Na,1,1);
+//	for(i=0;i<Na;i++) cs_entry(ident,i,i,1);	
+//	eye = cs_compress(ident);	
+	spMat = cs_add(params->eyeAnc,tmpMat,1.0,-1.0);
+
 	//cs_print_adk(spMat);
 	mt = cs_transpose(spMat,1);
 	//VecView(y,PETSC_VIEWER_STDOUT_WORLD);
@@ -490,8 +586,8 @@ void calcLogAFS_IM(void * p){
 	PetscFree(tmpArray);
 	cs_spfree(spMat);
 	cs_spfree(mt);
-	cs_spfree(ident);
-	cs_spfree(eye);
+//	cs_spfree(ident);
+//	cs_spfree(eye);
 	cs_spfree(tmpMat);
 	gsl_vector_free(tmpStates);
 	cs_nfree(NN);
@@ -835,8 +931,7 @@ double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p)
 	for(i = 0;i<5;i++) gsl_vector_set(params->paramVector, i, x[i]);
 	
 	//fill in the expAFS table
-	//calcLogAFS_IM(p);
-	calcLogAFS_IM_allPETSC(p);
+	calcLogAFS_IM(p);
 	params->nnz = localNNZ;
 	
 	//compute lik

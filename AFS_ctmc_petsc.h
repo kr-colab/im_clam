@@ -16,6 +16,10 @@ void fillPetscTransMats(afsStateSpace *S, double *topol, int *moveType, int *nzC
 	
 struct cs_di_sparse * fillPetscCsparseTransMats(afsStateSpace *S, double *topol, int *moveType, int *nzCount,
 	int *dim1, int *dim2, double theta1, double theta2, double mig1, double mig2, Mat *CTMC, gsl_vector *rates);
+
+struct cs_di_sparse * fillPetscCsparseTransMats_prealloc(afsStateSpace *S, double *topol, int *moveType, int *nzCount,
+	int *dim1, int *dim2, double theta1, double theta2, double mig1, double mig2,
+	Mat *CTMC, gsl_vector *rates, struct cs_di_sparse *triplet);
 	
 void calcLogAFS_IM(void * p);
 void calcLogAFS_IM_allPETSC(void * p);
