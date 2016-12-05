@@ -19,7 +19,7 @@ typedef struct clam_lik_params{
 	int rank;
 	int Na,fEvals;
 	double *expoArray;
-	cs_di *spMat, *eye, *eyeAnc, *tmpMat, *tmpMat2;
+	cs_di *spMat, *eye, *eyeAnc, *triplet, *tmpMat, *tmpMat2;
 
 	Vec  x_0, x, u,bP, u2, bP2, v, y, v_seq, *x2, ancStateVec, ancResVec;
 	Vec xInv,bInv;
