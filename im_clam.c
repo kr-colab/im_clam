@@ -202,7 +202,7 @@ int main(int argc, char **argv){
 	currentParams->fEvals=0;
 
 
-//	currentParams->triplet = cs_spalloc(N, N, nnz + N , 1, 1); //alloc sparse mat with extra space for nonzero identity mats
+	currentParams->triplet = cs_spalloc(N, N, nnz + N , 1, 1); //alloc sparse mat with extra space for nonzero identity mats
 	ident = cs_spalloc(N,N,N,1,1);
 	for(i=0;i<N;i++) cs_entry(ident,i,i,1);
 	currentParams->eye = cs_compress(ident);

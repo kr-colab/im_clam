@@ -330,11 +330,11 @@ void calcLogAFS_IM(void * p){
 // 	printf("nnz %d nnzA%d \n",params->nnz,params->nnzA);
  
 	//fill transMat
- //	tmpMat = fillPetscCsparseTransMats_prealloc(params->stateSpace, params->top, params->move, &params->nnz,
- //		params->dim1, params->dim2, 1, theta2, mig1, mig2,  &params->C, params->rates,params->triplet);
+ 	tmpMat = fillPetscCsparseTransMats_prealloc(params->stateSpace, params->top, params->move, &params->nnz,
+ 		params->dim1, params->dim2, 1, theta2, mig1, mig2,  &params->C, params->rates,params->triplet);
  
-	tmpMat = fillPetscCsparseTransMats(params->stateSpace, params->top, params->move, &params->nnz,
-	 		params->dim1, params->dim2, 1, theta2, mig1, mig2,  &params->C, params->rates);	
+//	tmpMat = fillPetscCsparseTransMats(params->stateSpace, params->top, params->move, &params->nnz,
+//	 		params->dim1, params->dim2, 1, theta2, mig1, mig2,  &params->C, params->rates);	
 	//using CSparse
 	// S = (I-P)^-1
 	//add negative ident
