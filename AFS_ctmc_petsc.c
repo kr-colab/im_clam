@@ -208,9 +208,15 @@ struct cs_di_sparse * fillPetscCsparseTransMats_prealloc(afsStateSpace *S, doubl
 		
 	int i, j,k, newnz, abcount=0;
 	int N = S->nstates,abFlag;
-	double  c0r[N],c1r[N],m0r[N],m1r[N],totR[N],rowSums[N], tmp;
+	double  *c0r,*c1r,*m0r,*m1r,*totR,*rowSums, tmp;
 	struct cs_di_sparse *tmat;
 	
+	c0r = malloc(sizeof(double)*N);
+	c1r = malloc(sizeof(double)*N);
+	m0r = malloc(sizeof(double)*N);
+	m1r = malloc(sizeof(double)*N);
+	totR = malloc(sizeof(double)*N);
+	rowSums = malloc(sizeof(double)*N);
 	
 	gsl_vector_set_zero(rates);
 	//set rates vector
@@ -291,6 +297,13 @@ struct cs_di_sparse * fillPetscCsparseTransMats_prealloc(afsStateSpace *S, doubl
   	MatAssemblyBegin(*CTMC,MAT_FINAL_ASSEMBLY);
   	MatAssemblyEnd(*CTMC,MAT_FINAL_ASSEMBLY);
 	tmat = cs_compress(triplet);
+	
+	free(c0r);
+	free(c1r);
+	free(m0r);
+	free(m1r);
+	free(totR);
+	free(rowSums);	
 	return(tmat);
 }
 
@@ -298,7 +311,7 @@ struct cs_di_sparse * fillPetscCsparseTransMats_prealloc(afsStateSpace *S, doubl
 void calcLogAFS_IM(void * p){
 	struct clam_lik_params * params = (struct clam_lik_params *) p;
  	int i,j, N = params->stateSpace->nstates;
-  	cs *spMat, *mt, *ident, *eye, *tmpMat ;
+  	cs *spMat, *mt, *tmpMat ;
   	double timeV, sum, thetaA, theta2, mig1, mig2;
   	int Na;
   	gsl_vector *tmpStates;
