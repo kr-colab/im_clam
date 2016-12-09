@@ -310,14 +310,14 @@ struct cs_di_sparse * fillPetscCsparseTransMats_prealloc(afsStateSpace *S, doubl
 //calcLogAFS_IM -- returns the expects log AFS from an IM model
 void calcLogAFS_IM(void * p){
 	struct clam_lik_params * params = (struct clam_lik_params *) p;
- 	int i,j, N = params->stateSpace->nstates;
+ 	PetscInt i,j, N = params->stateSpace->nstates;
   	cs *spMat, *mt, *tmpMat ;
   	double timeV, sum, thetaA, theta2, mig1, mig2;
-  	int Na;
+  	PetscInt Na;
   	gsl_vector *tmpStates;
  	css *S ;
 	csn *NN ;
-	int n,Ntmp ;
+	PetscInt n,Ntmp ;
 	double *xx;
  	PetscInt        iStart,iEnd, *idx;
 	const PetscInt *idx2;
@@ -612,14 +612,14 @@ void calcLogAFS_IM(void * p){
 //calcLogAFS_IM_allPETSC -- returns the expects log AFS from an IM model; only uses PETSC
 void calcLogAFS_IM_allPETSC(void * p){
 	struct clam_lik_params * params = (struct clam_lik_params *) p;
-	int i,j, N = params->stateSpace->nstates;
+	PetscInt i,j, N = params->stateSpace->nstates;
 	cs *spMat, *mt, *ident, *eye, *tmpMat ;
 	double timeV, sum, thetaA, theta2, mig1, mig2;
-	int Na;
+	PetscInt Na;
 	gsl_vector *tmpStates;
 	css *S ;
 	csn *NN ;
-	int n,Ntmp ;
+	PetscInt n,Ntmp ;
 	double *xx;
 	PetscInt        iStart,iEnd, *idx;
 	const PetscInt *idx2;
@@ -670,7 +670,7 @@ void calcLogAFS_IM_allPETSC(void * p){
 	ierr = MatFactorInfoInitialize(&info); 
 	ierr = MatGetFactor(params->D_copy,MATSOLVERSUPERLU_DIST,MAT_FACTOR_LU,&params->F); 
 	PetscInt icntl_7 = 5;
-	ierr = MatMumpsSetIcntl(params->F,7,icntl_7);
+	//ierr = MatMumpsSetIcntl(params->F,7,icntl_7);
 	info.fill = 5.0; 
 	ierr = MatLUFactorSymbolic(params->F,params->D_copy,perm,iperm,&info);
 	ierr = MatLUFactorNumeric(params->F,params->D_copy,&info);
