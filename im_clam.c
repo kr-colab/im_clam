@@ -27,7 +27,7 @@
 
 void import2DSFSData(const char *fileName, gsl_matrix *obsData);
 
-int n1, n2;
+PetscInt n1, n2;
 
 afsStateSpace *stateSpace, *reducedStateSpace;
 
@@ -56,10 +56,10 @@ static char help[] = "im_clam\n\
 
 
 int main(int argc, char **argv){
-	int i,j, N,runMode;
+	PetscInt i,j, N,runMode;
 	clock_t time1, time2;
-	int nnz;
-	int seed;
+	PetscInt nnz;
+	PetscInt seed;
 	char  filename[PETSC_MAX_PATH_LEN], filename2[PETSC_MAX_PATH_LEN], filename3[PETSC_MAX_PATH_LEN] ;
 	double lik = 0.0;
 	double mle[5] = {0.1,2,1,1,5};
@@ -69,13 +69,13 @@ int main(int argc, char **argv){
 	PetscMPIInt    rank,size;
 	PetscBool      flg,obsFlag;
 //	Vec tmpVec;
-	int dim=5;
+	PetscInt dim=5;
 	double snpNumber, pi_est, p, N0;
 	double u=1e-8;
 	double genPerYear=20;
 	gsl_matrix *fi;
 	FILE *infile;
-	int testInt=0;
+	PetscInt testInt=0;
 	PetscScalar one = 1.0;
 	cs *ident;
 	 
@@ -167,8 +167,8 @@ int main(int argc, char **argv){
 //	currentParams->snpNumber = snpNumber;
 	currentParams->expAFS = gsl_matrix_alloc(n1+1,n2+1);
 	currentParams->expAFS2 = gsl_matrix_alloc(n1+1,n2+1);
-	currentParams->map = malloc(sizeof(int)*N);
-	currentParams->reverseMap = malloc(sizeof(int)*N);
+	currentParams->map = malloc(sizeof(PetscInt)*N);
+	currentParams->reverseMap = malloc(sizeof(PetscInt)*N);
 	currentParams->rates = gsl_vector_alloc(stateSpace->nstates);
 	currentParams->stateVec = gsl_vector_alloc(stateSpace->nstates);
 	currentParams->resVec = gsl_vector_alloc(stateSpace->nstates);
@@ -181,8 +181,8 @@ int main(int argc, char **argv){
 	currentParams->top = malloc(sizeof(double) * nnz);
 	currentParams->topA = malloc(sizeof(double) * nnz);
 
-	currentParams->move = malloc(sizeof(int) * nnz);
-	currentParams->moveA = malloc(sizeof(int) * nnz);
+	currentParams->move = malloc(sizeof(PetscInt) * nnz);
+	currentParams->moveA = malloc(sizeof(PetscInt) * nnz);
 //	printf("allocated moveType...\n");
 	for(i=0;i< (nnz);i++){
 		currentParams->move[i]=0;
@@ -190,10 +190,10 @@ int main(int argc, char **argv){
 		currentParams->moveA[i]=0;
 		currentParams->topA[i]=0;
 	}
-	currentParams->dim1 = malloc(sizeof(int) * nnz);
-	currentParams->dim2 = malloc(sizeof(int) * nnz);
-	currentParams->dim1A = malloc(sizeof(int) * N * 10);
-	currentParams->dim2A = malloc(sizeof(int) * N * 10);
+	currentParams->dim1 = malloc(sizeof(PetscInt) * nnz);
+	currentParams->dim2 = malloc(sizeof(PetscInt) * nnz);
+	currentParams->dim1A = malloc(sizeof(PetscInt) * N * 10);
+	currentParams->dim2A = malloc(sizeof(PetscInt) * N * 10);
 	currentParams->b = malloc(N*sizeof(double));
 	currentParams->expoArray = malloc(N*sizeof(double));	
 	currentParams->st = malloc(N*sizeof(double));	
@@ -220,9 +220,9 @@ int main(int argc, char **argv){
 	ierr = MatSetUp(currentParams->C);CHKERRQ(ierr);
 
 	ierr = MatCreateDense(PETSC_COMM_WORLD,PETSC_DECIDE, PETSC_DECIDE, N, N, NULL, &currentParams->denseMat1);CHKERRQ(ierr);
-//	ierr = MatSetFromOptions(currentParams->denseMat1);CHKERRQ(ierr);   
+	ierr = MatSetFromOptions(currentParams->denseMat1);CHKERRQ(ierr);   
 	MatAssemblyBegin(currentParams->denseMat1,MAT_FINAL_ASSEMBLY);
-  	MatAssemblyEnd(currentParams->denseMat1,MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(currentParams->denseMat1,MAT_FINAL_ASSEMBLY);
 
 	///////// Set up MFN ////////////////////////////////////////////////////////////////////////////////////////
 	ierr = MFNCreate(PETSC_COMM_WORLD,&currentParams->mfn);CHKERRQ(ierr);	
