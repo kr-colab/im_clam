@@ -339,7 +339,8 @@ int main(int argc, char **argv){
 			for(i=0;i<5;i++)printf("%f ",mle[i]);
 			printf("\n\n");
 		}
-		maximizeLikNLOpt(&lik, currentParams, mle);	
+		maximizeLikNLOpt(&lik, currentParams, mle);
+		fi = getFisherInfoMatrix(mle, lik, currentParams);	
 		if(rank == 0){
 			printf("Composite Likelihood estimates of IM params (scaled by 1/theta_pop1):\n");
 			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
@@ -349,6 +350,15 @@ int main(int argc, char **argv){
 			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
 			for(i=0;i<4;i++)printf("%f\t",(float)mle[i]*N0);
 			printf("%f\t",(float)mle[i] * N0 * 4.0/ (float)genPerYear);
+			printf("\n\nUncertainty estimates of IM params (scaled by 1/theta_pop1):\n");
+			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
+			for(i=0;i<5;i++)printf("%f\t",(float) sqrt(gsl_matrix_get(fi,i,i)));
+			printf("\n\nUncertainty estimates of IM params (unscaled):\n");
+			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
+			for(i=0;i<4;i++)printf("%f\t",(float) sqrt(gsl_matrix_get(fi,i,i))*N0);
+			printf("%f\t",(float)sqrt(gsl_matrix_get(fi,i,i)) * N0 * 4.0/ (float)genPerYear);
+			printf("\n");
+			
 			printf("\n\nlikelihood: %lf\n",-lik);
 			currentParams->nnz = nnz;
 			printf("\nExpected AFS:\n");
