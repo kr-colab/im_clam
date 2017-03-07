@@ -50,6 +50,9 @@ static char help[] = "im_clam\n\
 	\t-obs (prints out observed AFS as well as that expected from MLE params)\n\
 	\t-u mutation rate per base pair per generation (only used to unscale parameters; default 1e-8)\n\
 	\t-g generation time (gens/year; default 20)\n\
+	\t-put upper bound for optimization of thetas\n\
+	\t-pum upper bound for optimization of migration rates\n\
+	\t-pudt upper bound for optimization of divergence time\n\
 	\t-r randomSeed\n\
 	\t-v verbose output\n";
 	
@@ -73,6 +76,9 @@ int main(int argc, char **argv){
 	double snpNumber, pi_est, p, N0;
 	double u=1e-8;
 	double genPerYear=20;
+	double put = 10.0;
+	double pum = 20.0;
+	double pudt=10.0;
 	gsl_matrix *fi;
 	FILE *infile;
 	PetscInt testInt=0;
@@ -105,6 +111,12 @@ int main(int argc, char **argv){
 	ierr = PetscOptionsGetInt(NULL,"-r",&seed,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetReal(NULL,"-u",&u,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetReal(NULL,"-g",&genPerYear,&flg);CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL,"-put",&put,&flg);CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL,"-pum",&pum,&flg);CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL,"-pudt",&pudt,&flg);CHKERRQ(ierr);
+	//set upper bounds
+	upperBounds[0]=put;upperBounds[1]=put;upperBounds[2]=pum;upperBounds[3]=pum;upperBounds[4]=pudt;
+	
 	if(!flg) seed=time(NULL);
 	
 	//printf("rank:%d %d\n",rank,seed);
