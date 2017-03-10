@@ -354,7 +354,7 @@ int main(int argc, char **argv){
 		maximizeLikNLOpt(&lik, currentParams, mle);
 		fi = getFisherInfoMatrix(mle, lik, currentParams);	
 		if(rank == 0){
-			printf("for scaling:\nu: %lf gen: %lf N0:%lf\n",u,gen,N0);
+			printf("for scaling:\nu: %lf gen: %lf N0:%lf\n",u,genPerYear,N0);
 			printf("Composite Likelihood estimates of IM params (scaled by 1/theta_pop1):\n");
 			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
 			for(i=0;i<5;i++)printf("%f\t",(float)mle[i]);
