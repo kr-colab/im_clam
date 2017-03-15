@@ -50,7 +50,7 @@ static char help[] = "im_clam\n\
 	\t-obs (prints out observed AFS as well as that expected from MLE params)\n\
 	\t-u mutation rate per base pair per generation (only used to unscale parameters; default 1e-8)\n\
 	\t-g generation time (gens/year; default 20)\n\
-	\t-propSNP proportion sites polymorphic (SegSites/Length of Seq; used to unscale parameter)\n\
+	\t-seqLen sequence length scanned for polymorphisms (used to unscale parameter)\n\
 	\t-put upper bound for optimization of thetas\n\
 	\t-pum upper bound for optimization of migration rates\n\
 	\t-pudt upper bound for optimization of divergence time\n\
@@ -80,7 +80,8 @@ int main(int argc, char **argv){
 	double put = 10.0;
 	double pum = 20.0;
 	double pudt=10.0;
-	double propSnp = 0.1;
+	double propSnp;
+	PetscInt seqLen;
 	gsl_matrix *fi;
 	FILE *infile;
 	PetscInt testInt=0;
@@ -113,7 +114,7 @@ int main(int argc, char **argv){
 	ierr = PetscOptionsGetInt(NULL,"-r",&seed,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetReal(NULL,"-u",&u,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetReal(NULL,"-g",&genPerYear,&flg);CHKERRQ(ierr);
-	ierr = PetscOptionsGetReal(NULL,"-propSNP",&propSnp,&flg);CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL,"-seqLen",&seqLen,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetReal(NULL,"-put",&put,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetReal(NULL,"-pum",&pum,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetReal(NULL,"-pudt",&pudt,&flg);CHKERRQ(ierr);
@@ -326,7 +327,8 @@ int main(int argc, char **argv){
 		//alloc data matrix and import data; estimate pi and N1
 		currentParams->obsData = gsl_matrix_alloc(n1+1,n2+1);
 		import2DSFSData(filename3, currentParams->obsData);
-		snpNumber = gsl_matrix_sum(currentParams->obsData);	
+		snpNumber = gsl_matrix_sum(currentParams->obsData);
+		propSnp = (float) snpNumber / (float) seqLen;
 	//	pi_est = 0.0;
 	//	for(i=1;i<n1;i++){
 	//		for(j=0;j<n2+1;j++){
@@ -359,7 +361,7 @@ int main(int argc, char **argv){
 		//get N0 estimate
 		N0 = propSnp / currentParams->meanTreeLength / 4.0 / u;	
 		if(rank == 0){
-			printf("for scaling:\nu: %e gen: %lf N0:%lf meanTreeLength:%lf\n",u,genPerYear,N0,currentParams->meanTreeLength);
+			printf("for scaling:\nu: %e gen: %lf N0:%lf meanTreeLength:%lf seqLen:%d\n",u,genPerYear,N0,currentParams->meanTreeLength,seqLen);
 			printf("Composite Likelihood estimates of IM params (scaled by 1/theta_pop1):\n");
 			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
 			for(i=0;i<5;i++)printf("%f\t",(float)mle[i]);
