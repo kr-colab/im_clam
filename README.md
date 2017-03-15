@@ -127,6 +127,10 @@ im_clam
 		-obs (prints out observed AFS as well as that expected from MLE params)
 		-u mutation rate per base pair per generation (only used to unscale parameters)
 		-g generation time (gens/year)
+		-propSNP proportion sites polymorphic (SegSites/Length of Seq; used to unscale parameter)
+		-put upper bound for optimization of thetas
+		-pum upper bound for optimization of migration rates
+		-pudt upper bound for optimization of divergence time
 		-r randomSeed
 		-v verbose output
 

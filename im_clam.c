@@ -50,6 +50,7 @@ static char help[] = "im_clam\n\
 	\t-obs (prints out observed AFS as well as that expected from MLE params)\n\
 	\t-u mutation rate per base pair per generation (only used to unscale parameters; default 1e-8)\n\
 	\t-g generation time (gens/year; default 20)\n\
+	\t-propSNP proportion sites polymorphic (SegSites/Length of Seq; used to unscale parameter)\n\
 	\t-put upper bound for optimization of thetas\n\
 	\t-pum upper bound for optimization of migration rates\n\
 	\t-pudt upper bound for optimization of divergence time\n\
@@ -79,6 +80,7 @@ int main(int argc, char **argv){
 	double put = 10.0;
 	double pum = 20.0;
 	double pudt=10.0;
+	double propSnp = 0.1;
 	gsl_matrix *fi;
 	FILE *infile;
 	PetscInt testInt=0;
@@ -111,6 +113,7 @@ int main(int argc, char **argv){
 	ierr = PetscOptionsGetInt(NULL,"-r",&seed,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetReal(NULL,"-u",&u,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetReal(NULL,"-g",&genPerYear,&flg);CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL,"-propSNP",&propSnp,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetReal(NULL,"-put",&put,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetReal(NULL,"-pum",&pum,&flg);CHKERRQ(ierr);
 	ierr = PetscOptionsGetReal(NULL,"-pudt",&pudt,&flg);CHKERRQ(ierr);
@@ -324,15 +327,15 @@ int main(int argc, char **argv){
 		currentParams->obsData = gsl_matrix_alloc(n1+1,n2+1);
 		import2DSFSData(filename3, currentParams->obsData);
 		snpNumber = gsl_matrix_sum(currentParams->obsData);	
-		pi_est = 0.0;
-		for(i=1;i<n1;i++){
-			for(j=0;j<n2+1;j++){
-				p =  (float) i / n1;
-				pi_est += (2 * p * (1.0 - p)) * gsl_matrix_get(currentParams->obsData,i,j);
-			}
-		}
-		pi_est *= n1 / (n1 - 1) / snpNumber;
-		N0=pi_est / u / 4;
+	//	pi_est = 0.0;
+	//	for(i=1;i<n1;i++){
+	//		for(j=0;j<n2+1;j++){
+	//			p =  (float) i / n1;
+	//			pi_est += (2 * p * (1.0 - p)) * gsl_matrix_get(currentParams->obsData,i,j);
+	//		}
+	//	}
+	//	pi_est *= n1 / (n1 - 1) / snpNumber;
+	//	N0=pi_est / u / 4;
 	}
 	////////////////////////////
 	time2=clock();
@@ -352,9 +355,11 @@ int main(int argc, char **argv){
 			printf("\n\n");
 		}
 		maximizeLikNLOpt(&lik, currentParams, mle);
-		fi = getFisherInfoMatrix(mle, lik, currentParams);	
+		fi = getFisherInfoMatrix(mle, lik, currentParams);
+		//get N0 estimate
+		N0 = propSnp / currentParams->meanTreeLength / 4.0 / u;	
 		if(rank == 0){
-			printf("for scaling:\nu: %e gen: %lf N0:%lf\n",u,genPerYear,N0);
+			printf("for scaling:\nu: %e gen: %lf N0:%lf meanTreeLength:%lf\n",u,genPerYear,N0,currentParams->meanTreeLength);
 			printf("Composite Likelihood estimates of IM params (scaled by 1/theta_pop1):\n");
 			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
 			for(i=0;i<5;i++)printf("%f\t",(float)mle[i]);

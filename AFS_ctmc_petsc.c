@@ -583,6 +583,7 @@ void calcLogAFS_IM(void * p){
 	gsl_matrix_add(params->expAFS,params->expAFS2);
 	sum = matrixSumDouble(params->expAFS);
 	gsl_matrix_scale(params->expAFS, 1.0 / sum);
+	params->meanTreeLength = sum;
 	// for(i=0;i< (params->n1+1) ;i++){
 	// 		for(j=0;j< (params->n2+1);j++){
 	// 			if(params->rank==0)printf("%.5f ",gsl_matrix_get(params->expAFS,i,j));
