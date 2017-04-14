@@ -125,8 +125,8 @@ im_clam
 		-global multi-level optimization (MLSL algo.)
 		-x <theta_2, theta_A, mig12, mig21, t_div> parameter starting values
 		-obs (prints out observed AFS as well as that expected from MLE params)
-		-u mutation rate per base pair per generation (only used to unscale parameters)
-		-g generation time (gens/year)
+		-u mutation rate per base pair per generation (only used to unscale parameters; default 1e-8)
+		-g generation time (gens/year; default 20)
 		-seqLen sequence length scanned for polymorphisms (used to unscale parameter)
 		-put upper bound for optimization of thetas
 		-pum upper bound for optimization of migration rates
@@ -143,7 +143,7 @@ as it says, the proper call is to use mpiexec to then run `im_clam`.
 There are a few options for use with the program. The first is the run mode. When no options are provided `im_clam` will do parameter estimation using the state space file, topology matrix, and data file specified. Parameter optimization using the low-storage BFGS algorithm. All optimization uses the `nlopt` library and you can read about the optimization algorithms [here](http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms). Here is an example
 
 ```
-$ $PETSC_DIR/arch-linux2-c-debug/bin/mpiexec -n 2 ./im_clam -s stateSpaceFiles/testSS_33 -m stateSpaceFiles/testSS_33_mats -d exampleInput_33 -u 0.00001
+$ $PETSC_DIR/arch-linux2-c-debug/bin/mpiexec -n 2 ./im_clam -s stateSpaceFiles/testSS_33 -m stateSpaceFiles/testSS_33_mats -d exampleInput_33 -u 0.00001 -seqLen 100000
 
 .___   _____             .__
 |   | /     \       ____ |  | _____    _____
@@ -152,9 +152,10 @@ $ $PETSC_DIR/arch-linux2-c-debug/bin/mpiexec -n 2 ./im_clam -s stateSpaceFiles/t
 |___\____|__  /____\___  >____(____  /__|_|  /
             \/_____/   \/          \/      \/
 
-
 im_clam -- Isolation with Migration Composite Likelihood Analysis using Markov chains
 
+
+setup time:0.016036 secs
 
 
 Parameter estimation run mode
@@ -162,29 +163,40 @@ Parameter estimation run mode
 now optimizing....
 
 initial parameter guess:
-7.564897 8.928837 10.018410 2.071886 4.159601 
+4.676784 0.055509 17.598070 17.603366 7.730439
 
+for scaling:
+u: 1.000000e-05 gen: 20.000000 N0:2478.061352 meanTreeLength:6.370201 seqLen:100000
 Composite Likelihood estimates of IM params (scaled by 1/theta_pop1):
 theta_pop2	theta_anc	mig_1->2	mig_2->1	t_div
-1.013741	0.907719	0.100391	0.098687	2.102067	
+1.013741	0.907709	0.100391	0.098687	2.102073
 
 Composite Likelihood estimates of IM params (unscaled):
 theta_pop2	theta_anc	mig_1->2	mig_2->1	t_div
-13222.639092	11839.754624	1309.445195	1287.214853	5483.623451	
+2512.111547	2249.358302	0.000010	0.000010	1041.813149
+
+Uncertainty estimates of IM params (scaled by 1/theta_pop1):
+theta_pop2	theta_anc	mig_1->2	mig_2->1	t_div
+0.015723	0.575429	0.003656	0.004326	0.334777
+
+Uncertainty estimates of IM params (unscaled):
+theta_pop2	theta_anc	mig_1->2	mig_2->1	t_div
+38.962940	1425.949159	0.000000	0.000000	165.919381
+
 
 likelihood: -125869.001406
 
 Expected AFS:
-0.00 0.16 0.09 0.21 
-0.16 0.00 0.00 0.02 
-0.09 0.00 0.00 0.01 
-0.21 0.02 0.01 0.00 
+0.000000 0.165187 0.089553 0.211891
+0.163400 0.004986 0.003882 0.017417
+0.088911 0.003863 0.002239 0.009148
+0.212882 0.017459 0.009183 0.000000
 ///////////
-total run time:14.163778 secs
- Liklihood Func. Evals: 474
+total run time:308.096287 secs
+ Liklihood Func. Evals: 1100
 
 ```
-A few things to note. First I am launching `im_clam` with the version of `MPI` that we bundled with `petsc`. This is an easy way to make sure that things work correctly on the `MPI` side of things so I recommend that approach. Then I have specified my input files along with a single option, the `-u` flag that will allow me to input a mutation rate for unscaled parameter estimates. `im_clam` then outputs the initial parameter starting point, the scaled estimates of the IM parameters, the unscaled parameter estimates (assumes a mutation rate and a generation time), the likelihood, and the expected AFS under the estimated model.
+A few things to note. First I am launching `im_clam` with the version of `MPI` that we bundled with `petsc`. This is an easy way to make sure that things work correctly on the `MPI` side of things so I recommend that approach. Then I have specified my input files along with a single option, the `-u` flag that will allow me to input a mutation rate for unscaled parameter estimates and for these we also need to specify the number of sites surveyed with `-seqLen`. `im_clam` then outputs the initial parameter starting point, the scaled estimates of the IM parameters, the unscaled parameter estimates (assumes a mutation rate and a generation time), their associated uncertainty, the likelihood, and the expected AFS under the estimated model.
 
 For optimization I provide two other options. The `-mo` flag with run the LS-BFGS three independent times from different starting points. The `-global` flag runs the Multi-Level Single-Linkage algorithm described [here](http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms#MLSL_.28Multi-Level_Single-Linkage.29). The starting parameter vector for optimization can be set with the `-x` flag which takes as its argument a comma separated list of parameters in the specified order.
 
