@@ -8,6 +8,8 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_sort.h>
 #include <gsl/gsl_sort_vector.h>
+#include <gsl/gsl_rng.h>
+
 #include <math.h>
 #include <assert.h>
 
@@ -29,6 +31,7 @@ void gsl_matrix_lower_tri(gsl_matrix *x);
 void gsl_matrix_upper_tri(gsl_matrix *x);
 double gsl_matrix_trace(gsl_matrix *x);
 void gsl_matrix_covariance(gsl_matrix *data, gsl_matrix *cov);
+void gsl_matrix_bootstrap(gsl_matrix *orig, gsl_matrix *boot, gsl_rng *rng);
 
 void gsl_matrix_prettyPrint(gsl_matrix *m);
 

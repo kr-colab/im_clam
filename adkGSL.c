@@ -9,6 +9,8 @@
 #include <gsl/gsl_sort.h>
 #include <gsl/gsl_sort_vector.h>
 #include <gsl/gsl_statistics.h>
+#include <gsl/gsl_rng.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -137,7 +139,24 @@ double gsl_matrix_sum(gsl_matrix *mat){
 	return sum;
 }
 
-
+//gsl_matrix_bootstrap-- fill matrix boot with samples with replacement from orignal
+// needs an initialize random number generator
+void gsl_matrix_bootstrap(gsl_matrix *orig, gsl_matrix *boot, gsl_rng *rng){
+	
+	size_t i, j;
+	double prob, sum, probSum;
+	int M, tmp;
+	
+	sum = gsl_matrix_sum(orig);
+	M = (int) sum;
+	probSum = 0.0;
+	for (i = 0; i < orig->size2; i++) {
+ 		for (j = 0; j < orig->size2; j++) {
+			prob = gsl_matrix_get(orig,i,j) / M;
+			printf("%f\n",prob);
+		}
+	}
+}
 /* efficiently compute log of sum of values, which themselves are
    stored as logs: that is, return log(sum_i exp(l_i)).  The largest
    of the elements of l (call it maxval) is factored out, so that

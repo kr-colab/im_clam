@@ -339,6 +339,8 @@ int main(int argc, char **argv){
 	//	pi_est *= n1 / (n1 - 1) / snpNumber;
 	//	N0=pi_est / u / 4;
 	}
+	
+	gsl_matrix_bootstrap(currentParams->obsData,currentParams->obsData, r);
 	////////////////////////////
 	time2=clock();
 	if(rank==0)printf("setup time:%f secs\n\n",(double) (time2-time1)/CLOCKS_PER_SEC);
