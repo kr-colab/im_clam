@@ -143,19 +143,29 @@ double gsl_matrix_sum(gsl_matrix *mat){
 // needs an initialize random number generator
 void gsl_matrix_bootstrap(gsl_matrix *orig, gsl_matrix *boot, gsl_rng *rng){
 	
-	size_t i, j;
-	double prob, sum, probSum;
-	int M, tmp;
+	size_t i, j, k, K;
+	K = (size_t) orig->size1 * orig->size2;
+	double probs[K], sum;
+	int randM[K];
+	int M;
 	
 	sum = gsl_matrix_sum(orig);
 	M = (int) sum;
-	probSum = 0.0;
-	for (i = 0; i < orig->size2; i++) {
+	k = 0;
+	for (i = 0; i < orig->size1; i++) {
  		for (j = 0; j < orig->size2; j++) {
-			prob = gsl_matrix_get(orig,i,j) / M;
-			printf("%f\n",prob);
+			probs[k++] = gsl_matrix_get(orig,i,j) / M;
 		}
 	}
+	gsl_ran_multinomial (rng,K,M, probs, randM);
+	k = 0;
+	for (i = 0; i < orig->size1; i++) {
+ 		for (j = 0; j < orig->size2; j++) {
+			gsl_matrix_set(boot,i,j,randM[k++]);
+		}
+	}
+	
+	
 }
 /* efficiently compute log of sum of values, which themselves are
    stored as logs: that is, return log(sum_i exp(l_i)).  The largest

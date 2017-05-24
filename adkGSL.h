@@ -9,7 +9,7 @@
 #include <gsl/gsl_sort.h>
 #include <gsl/gsl_sort_vector.h>
 #include <gsl/gsl_rng.h>
-
+#include <gsl/gsl_randist.h>
 #include <math.h>
 #include <assert.h>
 
