@@ -9,6 +9,7 @@ typedef struct clam_lik_params{
 	//For straight MLE the paramVector takes the form [N2,NA,m1,m2,t]
 	gsl_matrix *log_afs, *transMat,*expAFS, *expAFS2, *invMatGSL, *invMatGSLA, *obsData;
 	afsStateSpace *stateSpace ,*reducedStateSpace;
+	gsl_rng *rng;
 	struct site *data;
 	double *cs_work,*new,*topA,*resultTmp,**invMat,*b,*res, *st, *top;
 	int *dim1, *dim2, *moveA, *move, *dim1A, *dim2A; //these pointers ease the construction of sparse matrices

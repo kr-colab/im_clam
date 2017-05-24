@@ -1181,3 +1181,86 @@ gsl_matrix *getFisherInfoMatrix(double *mle, double lik, void *p){
 	//gsl_matrix_prettyPrint(fi);printf("\n");
 	return(fi);
 }
+
+gsl_matrix *getGodambeInfoMatrix(double *mle, double lik, void *p){
+	gsl_matrix *H;
+	gsl_matrix *J,*Jtemp, *Jinv, *origData, *boot;
+	gsl_vector *cU, *grad_temp;
+	struct clam_lik_params * params = (struct clam_lik_params *) p;
+	gsl_permutation *perm = gsl_permutation_alloc(5);
+	int s,i, nBoot;
+	
+	origData = params->obsData;
+	nBoot = 10;
+	
+	H = hessian(mle,lik,p);
+	//gsl_matrix_prettyPrint(H);printf("\n");
+	J = gsl_matrix_alloc(5,5);
+	Jinv = gsl_matrix_alloc(5,5);
+	Jtemp = gsl_matrix_alloc(5,5);
+	boot = gsl_matrix_alloc(origData->size1,origData->size2);
+	
+	gsl_matrix_set_zero(J);
+	gsl_matrix_set_zero(Jinv);
+	gsl_matrix_set_zero(Jtemp);
+	cU = gsl_vector_alloc(5);
+	gsl_vector_set_zero(cU);
+	
+	//do bootstraps, estimate J
+	for(i=0;i<nBoot;i++){
+		gsl_matrix_bootstrap(origData, boot, params->rng);
+		params->obsData = boot;
+		grad_temp = getGradient(mle,p);
+		gsl_vector_outer_product(grad_temp,grad_temp,Jtemp);
+		gsl_matrix_add(J,Jtemp);
+		gsl_vector_add(cU,grad_temp);
+		gsl_vector_free(grad_temp);
+	}
+	gsl_vector_scale(cU,1.0/nBoot);
+	gsl_matrix_scale(J,1.0/nBoot);
+	//G = H*J^-1*H
+	gsl_linalg_LU_decomp (J, perm, &s);    
+	gsl_linalg_LU_invert (J, perm, Jinv);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Jinv, H, 0.0, Jtemp);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Jtemp, H, 0.0, J);
+	gsl_matrix_prettyPrint(J);printf("\n");
+	//need to invert this to get the Godambe information matrix
+	return(J);
+}
+
+gsl_vector *getGradient(double *mle, void *p){
+	int i, j;
+	double eps, epsVals[5], paramTemp[5], fp, fm;
+	gsl_vector *gradient;
+	
+	gradient = gsl_vector_alloc(5);
+	eps = 0.001;
+	
+	for(i=0;i<5;i++){
+		if( mle[i] != 0){
+			epsVals[i] = mle[i] * eps;
+		}
+		else{
+			epsVals[i] = eps;
+		}
+		paramTemp[i] = mle[i];
+	}
+	for(i=0;i<5;i++){
+		if( mle[i] != 0){
+			paramTemp[i] = mle[i] + epsVals[i];
+			fp = calcLikNLOpt(5,paramTemp,NULL,p);
+			paramTemp[i] = mle[i] - epsVals[i];
+			fm = calcLikNLOpt(5,paramTemp,NULL,p);
+			gsl_vector_set(gradient,i,(fp+fm)/(2*epsVals[i]));
+		}
+		else{
+			paramTemp[i] = mle[i] + epsVals[i];
+			fp = calcLikNLOpt(5,paramTemp,NULL,p);
+			paramTemp[i] = mle[i];
+			fm = calcLikNLOpt(5,paramTemp,NULL,p);
+			gsl_vector_set(gradient,i,(fp+fm)/epsVals[i]);
+		}
+	}
+	return(gradient);
+}
+

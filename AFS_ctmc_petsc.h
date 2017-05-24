@@ -33,4 +33,7 @@ void maximizeLikNLOpt_MLSL(double *lik, void *p, double *mle);
 double hessianMatrix_element(double lik, double *mle, int i, int j, double hi, double hj, void *p);
 gsl_matrix *hessian(double *mle, double lik, void *p);
 gsl_matrix *getFisherInfoMatrix(double *mle, double lik, void *p);
+gsl_vector *getGradient(double *mle, void *p);
+gsl_matrix *getGodambeInfoMatrix(double *mle, double lik, void *p);
+
 
