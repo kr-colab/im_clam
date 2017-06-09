@@ -6,8 +6,11 @@
 #include "cs.h"
 #include "AFS_ctmc.h"
 #include "nlopt.h"
+#include "adkGSL.h"
 #include <gsl/gsl_linalg.h>
-
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_cblas.h>
+#include <gsl/gsl_blas.h>
 //Functions for jointly computing CTMC transitions and embedded chain
 
 //this function fills two petsc matrices: 1) embedded Discrete MC trans Mat, 2) CTMC trans mat
@@ -947,7 +950,6 @@ double calcLikNLOpt(unsigned n, const double *point, double *gradients, void *p)
 	//fill in the expAFS table
 	calcLogAFS_IM(p);
 	params->nnz = localNNZ;
-	
 	//compute lik
 	for(i=0;i<params->obsData->size1;i++){
 		for(j=0;j<params->obsData->size2;j++){
@@ -1175,7 +1177,7 @@ gsl_matrix *getFisherInfoMatrix(double *mle, double lik, void *p){
 	H = hessian(mle,lik,p);
 	//gsl_matrix_prettyPrint(H);printf("\n");
 	fi = gsl_matrix_alloc(5,5);
-	//gsl_matrix_scale(H,-1.0);
+	gsl_matrix_scale(H,-1.0);
 	gsl_linalg_LU_decomp (H, perm, &s);    
 	gsl_linalg_LU_invert (H, perm, fi);
 	//gsl_matrix_prettyPrint(fi);printf("\n");
@@ -1191,9 +1193,10 @@ gsl_matrix *getGodambeInfoMatrix(double *mle, double lik, void *p){
 	int s,i, nBoot;
 	
 	origData = params->obsData;
-	nBoot = 10;
+	nBoot = 100;
 	
 	H = hessian(mle,lik,p);
+	gsl_matrix_scale(H,-1.0);
 	//gsl_matrix_prettyPrint(H);printf("\n");
 	J = gsl_matrix_alloc(5,5);
 	Jinv = gsl_matrix_alloc(5,5);
@@ -1214,18 +1217,26 @@ gsl_matrix *getGodambeInfoMatrix(double *mle, double lik, void *p){
 		gsl_vector_outer_product(grad_temp,grad_temp,Jtemp);
 		gsl_matrix_add(J,Jtemp);
 		gsl_vector_add(cU,grad_temp);
+		//gsl_matrix_prettyPrint(Jtemp);
 		gsl_vector_free(grad_temp);
 	}
-	gsl_vector_scale(cU,1.0/nBoot);
-	gsl_matrix_scale(J,1.0/nBoot);
+	gsl_vector_scale(cU,1.0/(float)nBoot);
+	gsl_matrix_scale(J,1.0/(float)nBoot);
+	//printf("cU:\n");
+	//gsl_vector_fprintf(stdout,cU,"%f");
+	//printf("J:\n");
+	//gsl_matrix_prettyPrint(J);printf("\n");
 	//G = H*J^-1*H
 	gsl_linalg_LU_decomp (J, perm, &s);    
 	gsl_linalg_LU_invert (J, perm, Jinv);
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Jinv, H, 0.0, Jtemp);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, H, Jinv, 0.0, Jtemp);
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, Jtemp, H, 0.0, J);
-	gsl_matrix_prettyPrint(J);printf("\n");
+	//printf("godambe:\n");
+	//gsl_matrix_prettyPrint(J);printf("\n");
 	//need to invert this to get the Godambe information matrix
-	return(J);
+	gsl_linalg_LU_decomp (J, perm, &s);    
+	gsl_linalg_LU_invert (J, perm, Jinv);
+	return(Jinv);
 }
 
 gsl_vector *getGradient(double *mle, void *p){
@@ -1234,11 +1245,11 @@ gsl_vector *getGradient(double *mle, void *p){
 	gsl_vector *gradient;
 	
 	gradient = gsl_vector_alloc(5);
-	eps = 0.001;
-	
+	eps = 0.01;
 	for(i=0;i<5;i++){
 		if( mle[i] != 0){
 			epsVals[i] = mle[i] * eps;
+			//printf("eps[%d]=%f\n",i,epsVals[i]);
 		}
 		else{
 			epsVals[i] = eps;
@@ -1246,19 +1257,20 @@ gsl_vector *getGradient(double *mle, void *p){
 		paramTemp[i] = mle[i];
 	}
 	for(i=0;i<5;i++){
+		for(j=0;j<5;j++) paramTemp[j] = mle[j];
 		if( mle[i] != 0){
 			paramTemp[i] = mle[i] + epsVals[i];
 			fp = calcLikNLOpt(5,paramTemp,NULL,p);
 			paramTemp[i] = mle[i] - epsVals[i];
 			fm = calcLikNLOpt(5,paramTemp,NULL,p);
-			gsl_vector_set(gradient,i,(fp+fm)/(2*epsVals[i]));
+			gsl_vector_set(gradient,i,(fp-fm)/(2*epsVals[i]));
 		}
 		else{
 			paramTemp[i] = mle[i] + epsVals[i];
 			fp = calcLikNLOpt(5,paramTemp,NULL,p);
 			paramTemp[i] = mle[i];
 			fm = calcLikNLOpt(5,paramTemp,NULL,p);
-			gsl_vector_set(gradient,i,(fp+fm)/epsVals[i]);
+			gsl_vector_set(gradient,i,(fp-fm)/epsVals[i]);
 		}
 	}
 	return(gradient);
