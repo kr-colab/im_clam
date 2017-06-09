@@ -1,6 +1,6 @@
 #include <slepcmfn.h>
 #include "cs.h"
-
+#include <gsl/gsl_rng.h>
 //for use in programs like im_clam
 typedef struct clam_lik_params{
 	int snpNumber, maxSampleSize,nstates,n1,n2,nParams;
