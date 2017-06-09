@@ -82,7 +82,7 @@ int main(int argc, char **argv){
 	double pudt=10.0;
 	double propSnp;
 	PetscInt seqLen;
-	gsl_matrix *fi;
+	gsl_matrix *fi,*gi;
 	FILE *infile;
 	PetscInt testInt=0;
 	PetscScalar one = 1.0;
@@ -176,6 +176,7 @@ int main(int argc, char **argv){
 	
 	//setup currentParams struct; alloc all arrays
 	currentParams = malloc(sizeof(clam_lik_params));
+	currentParams->rng = r;
 	currentParams->n1 = n1 = stateSpace->states[0]->popMats[0]->size1 - 1;
 	currentParams->n2 = n2 = stateSpace->states[0]->popMats[1]->size2 - 1;
 	currentParams->stateSpace = stateSpace;
@@ -340,13 +341,13 @@ int main(int argc, char **argv){
 	//	N0=pi_est / u / 4;
 	}
 
-	gsl_matrix_bootstrap(currentParams->obsData,currentParams->obsData, r);
 	////////////////////////////
 	time2=clock();
 	if(rank==0)printf("setup time:%f secs\n\n",(double) (time2-time1)/CLOCKS_PER_SEC);
 	
 	time1=clock();
 	//expected AFS
+	printf("runMode = %d\n",runMode);
 	switch(runMode){
 		
 		
@@ -359,7 +360,7 @@ int main(int argc, char **argv){
 			printf("\n\n");
 		}
 		maximizeLikNLOpt(&lik, currentParams, mle);
-		fi = getFisherInfoMatrix(mle, lik, currentParams);
+		fi = getGodambeInfoMatrix(mle, lik, currentParams);
 		//get N0 estimate
 		N0 = propSnp / currentParams->meanTreeLength / 4.0 / u;	
 		if(rank == 0){
@@ -487,8 +488,12 @@ int main(int argc, char **argv){
 		}
 		lik = calcLikNLOpt(5,mle,NULL,currentParams);
 		fi = getFisherInfoMatrix(mle, lik, currentParams);
+		gi = getGodambeInfoMatrix(mle, lik, currentParams);
 		if(rank==0){
-		//	gsl_matrix_prettyPrint(fi);
+			printf("FIM:\n");
+			gsl_matrix_prettyPrint(fi);
+			printf("\nGIM:\n");
+			gsl_matrix_prettyPrint(gi);
 			printf("\n");
 		}
 		if(rank==0){
@@ -502,11 +507,11 @@ int main(int argc, char **argv){
 			printf("%f\t",(float)mle[i] * N0 * 4.0/ (float)genPerYear);
 			printf("\n\nUncertainty estimates of IM params (scaled by 1/theta_pop1):\n");
 			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
-			for(i=0;i<5;i++)printf("%f\t",(float) sqrt(gsl_matrix_get(fi,i,i)));
+			for(i=0;i<5;i++)printf("%f\t",(float) sqrt(gsl_matrix_get(gi,i,i)));
 			printf("\n\nUncertainty estimates of IM params (unscaled):\n");
 			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
-			for(i=0;i<4;i++)printf("%f\t",(float) sqrt(gsl_matrix_get(fi,i,i))*N0);
-			printf("%f\t",(float)sqrt(gsl_matrix_get(fi,i,i)) * N0 * 4.0/ (float)genPerYear);
+			for(i=0;i<4;i++)printf("%f\t",(float) sqrt(gsl_matrix_get(gi,i,i))*N0);
+			printf("%f\t",(float)sqrt(gsl_matrix_get(gi,i,i)) * N0 * 4.0/ (float)genPerYear);
 			printf("\n");
 		}
 		break;
