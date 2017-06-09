@@ -10,7 +10,7 @@
 #include <gsl/gsl_sort_vector.h>
 #include <gsl/gsl_statistics.h>
 #include <gsl/gsl_rng.h>
-
+#include <gsl/gsl_cblas.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -164,8 +164,6 @@ void gsl_matrix_bootstrap(gsl_matrix *orig, gsl_matrix *boot, gsl_rng *rng){
 			gsl_matrix_set(boot,i,j,randM[k++]);
 		}
 	}
-	
-	
 }
 /* efficiently compute log of sum of values, which themselves are
    stored as logs: that is, return log(sum_i exp(l_i)).  The largest
