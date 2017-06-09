@@ -120,7 +120,7 @@ im_clam
 
 	options:
 		-exp expected value mode (requires -x flag too)
-		-FIM uncertainty estimation mode (requires -x flag too)
+		-GIM uncertainty estimation mode (requires -x flag too)
 		-mo multiple optimizations from different start points
 		-global multi-level optimization (MLSL algo.)
 		-x <theta_2, theta_A, mig12, mig21, t_div> parameter starting values
@@ -232,7 +232,7 @@ total run time:0.076992 secs
  Liklihood Func. Evals: 0
 ```
 #### Uncertainty Estimation Mode
-If one uses the `-FIM` flag the program calculates parameter confidence intervals for a dataset given the parameterization specified by the `-x` flag which is assumed to be the MLE calculated through the estimation mode above. Parameter confidence intervals are estimated using the Fisher Information matrix and insomuch a number of assumptions are made about the asymptotic properities of the likelihood surface. 
+If one uses the `-GIM` flag the program calculates parameter confidence intervals for a dataset given the parameterization specified by the `-x` flag which is assumed to be the MLE calculated through the estimation mode above. Parameter confidence intervals are estimated using the Godambe Information matrix and insomuch a number of assumptions are made about the asymptotic properities of the likelihood surface. 
 
 The `-v` flag gives a verbose output, printing the parameter values and likelihood at each likelihood evaluation. The `-obs` flag outputs the observed AFS specified in the datafile. Finally the `-r` flag enables the user to specify the random seed. 
 

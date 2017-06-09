@@ -43,7 +43,7 @@ PetscBool vbse = PETSC_FALSE;
 static char help[] = "im_clam\n\
 	Example: mpiexec -n <np> ./im_clam -s <stateSpace file> -m <mats file> -d <data file> \n\n\toptions:\n\
 	\t-exp expected value mode (requires -x flag too)\n\
-	\t-FIM uncertainty estimation mode (requires -x flag too)\n\
+	\t-GIM uncertainty estimation mode (requires -x flag too)\n\
 	\t-mo multiple optimizations from different start points\n\
 	\t-global multi-level optimization (MLSL algo.)\n\
 	\t-x <theta_2, theta_A, mig12, mig21, t_div> parameter starting values\n\
@@ -155,7 +155,7 @@ int main(int argc, char **argv){
 	
 	PetscOptionsHasName(NULL,"-mo",&flg); if(flg) runMode=3;
 	PetscOptionsHasName(NULL,"-global",&flg); if(flg) runMode=4;
-	PetscOptionsHasName(NULL,"-FIM",&flg); if(flg) runMode=5;
+	PetscOptionsHasName(NULL,"-GIM",&flg); if(flg) runMode=5;
 	
 	
 	//import state space
@@ -447,7 +447,7 @@ int main(int argc, char **argv){
 			printf("\n\n");
 		}
 		maximizeLikNLOpt_MLSL(&lik, currentParams, mle);
-		fi = getFisherInfoMatrix(mle, lik, currentParams);	
+		fi = getGodambeInfoMatrix(mle, lik, currentParams);	
 		if(rank == 0){
 			printf("Composite Likelihood estimates of IM params (scaled by 1/theta_pop1):\n");
 			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
@@ -481,21 +481,20 @@ int main(int argc, char **argv){
 			gsl_vector_set(currentParams->paramVector,i,mle[i]);
 		}
 		if(rank==0){
-			printf("\nUncertainty estimation (via Fisher Information) run mode\n\n");
+			printf("\nUncertainty estimation (via Godambe Information) run mode\n\n");
 			printf("MLE parameters:\n");
 			for(i=0;i<5;i++)printf("%f ",mle[i]);
 			printf("\n");
 		}
 		lik = calcLikNLOpt(5,mle,NULL,currentParams);
-		fi = getFisherInfoMatrix(mle, lik, currentParams);
 		gi = getGodambeInfoMatrix(mle, lik, currentParams);
-		if(rank==0){
-			printf("FIM:\n");
-			gsl_matrix_prettyPrint(fi);
-			printf("\nGIM:\n");
-			gsl_matrix_prettyPrint(gi);
-			printf("\n");
-		}
+		// if(rank==0){
+		// 	printf("FIM:\n");
+		// 	gsl_matrix_prettyPrint(fi);
+		// 	printf("\nGIM:\n");
+		// 	gsl_matrix_prettyPrint(gi);
+		// 	printf("\n");
+		// }
 		if(rank==0){
 			printf("\nlikelihood: %lf\n",-lik);
 			printf("Composite Likelihood estimates of IM params (scaled by 1/theta_pop1):\n");
