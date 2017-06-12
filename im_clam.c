@@ -347,7 +347,7 @@ int main(int argc, char **argv){
 	
 	time1=clock();
 	//expected AFS
-	printf("runMode = %d\n",runMode);
+	//printf("runMode = %d\n",runMode);
 	switch(runMode){
 		
 		
@@ -449,6 +449,7 @@ int main(int argc, char **argv){
 		maximizeLikNLOpt_MLSL(&lik, currentParams, mle);
 		fi = getGodambeInfoMatrix(mle, lik, currentParams);	
 		if(rank == 0){
+			N0 = propSnp / currentParams->meanTreeLength / 4.0 / u;	
 			printf("Composite Likelihood estimates of IM params (scaled by 1/theta_pop1):\n");
 			printf("theta_pop2\ttheta_anc\tmig_1->2\tmig_2->1\tt_div\n");
 			for(i=0;i<5;i++)printf("%f\t",(float)mle[i]);
