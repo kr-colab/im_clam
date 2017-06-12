@@ -489,6 +489,8 @@ int main(int argc, char **argv){
 		}
 		lik = calcLikNLOpt(5,mle,NULL,currentParams);
 		gi = getGodambeInfoMatrix(mle, lik, currentParams);
+		N0 = propSnp / currentParams->meanTreeLength / 4.0 / u;	
+		
 		// if(rank==0){
 		// 	printf("FIM:\n");
 		// 	gsl_matrix_prettyPrint(fi);
