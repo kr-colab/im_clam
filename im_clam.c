@@ -407,9 +407,11 @@ int main(int argc, char **argv){
 			printf("\n\n");
 		}
 		time2=clock();
-		lik = calcLikNLOpt(5,mle,NULL,currentParams);
-		printf("Likelihood: %g\n",lik);
-		if(rank==0)printf("w/ CSPARSE time:%f secs\n Liklihood Func. Evals: %d\n",(double) (time2-time1)/CLOCKS_PER_SEC,currentParams->fEvals);
+		//lik = calcLikNLOpt(5,mle,NULL,currentParams);
+		//
+		
+		//printf("Likelihood: %g\n",lik);
+		//if(rank==0)printf("w/ CSPARSE time:%f secs\n Liklihood Func. Evals: %d\n",(double) (time2-time1)/CLOCKS_PER_SEC,currentParams->fEvals);
 		time1=clock();
 		break;
 		case 3:
